@@ -133,6 +133,11 @@ class MRTApp {
       this.animateReveals();
       this.bindEvents();
       this.initSmoothScroll();
+
+      // Export to global scope for button onclick events (Vite module fix)
+      window.openQuickView = (id) => this.openQuickView(id);
+      window.openReviewModal = (id, name) => this.openReviewModal(id, name);
+      
     } catch (err) {
       console.error('MRTApp Initialization Error:', err);
     }
@@ -150,20 +155,38 @@ class MRTApp {
 
     try {
       // Surgical cache bust on core JSON data fetching only
-      const [productsRes, themesRes] = await Promise.all([
-        fetch(`/api/legacy/products?_t=${Date.now()}`),
-        fetch(`/api/legacy/themes?_t=${Date.now()}`)
+      const [productsRes, catsRes] = await Promise.all([
+        fetch(`/api/products?_t=${Date.now()}`),
+        fetch(`/api/categories?_t=${Date.now()}`)
       ]);
 
-      if (!productsRes.ok || !themesRes.ok) throw new Error('API error');
+      if (!productsRes.ok || !catsRes.ok) throw new Error('API error');
 
-      const products = await productsRes.json();
-      const themes = await themesRes.json();
-      const theme = themes[this.currentCategory];
+      const productsData = await productsRes.json();
+      const products = Array.isArray(productsData) ? productsData : (productsData.products || []);
+      const categories = await catsRes.json();
+      
+      this.allProducts = products;
+      const themeData = categories.find(c => c.theme && c.slug === this.currentCategory);
+      const theme = themeData ? themeData.theme : null;
 
       if (theme) {
         this.applyTheme(theme);
-        this.renderBoutiqueProducts(products, this.currentCategory, container);
+        
+        // Add SEO Header at top of category page
+        const titleEl = document.getElementById('seo-title');
+        const introEl = document.getElementById('seo-intro');
+        
+        if (titleEl) {
+           titleEl.innerText = theme.seoTitle || `Top 10 Best ${theme.title} Products (2026)`;
+           titleEl.classList.add('text-gray-900', 'font-black'); // Force Contrast
+        }
+        if (introEl) {
+           introEl.innerText = theme.seoIntro || `Discover the most useful, trending, and top-rated ${theme.title.toLowerCase()} products carefully selected for quality and value.`;
+           introEl.classList.add('text-gray-800', 'font-medium'); // Force Contrast
+        }
+        
+        this.renderBoutiqueProducts(this.allProducts, this.currentCategory, container);
       } else {
         container.innerHTML = `<p class="col-span-full text-center serif italic opacity-50 py-20 animate-pulse text-on-surface">Synchronizing Collection for "${this.currentCategory}"...</p>`;
       }
@@ -235,41 +258,72 @@ class MRTApp {
       const shortDesc = product.shortBenefit || 'Premium quality product selected for elite needs.';
       const image = product.image || '/assets/products/premium_product_placeholder.png';
       const price = product.price ? product.price.toFixed(2) : '39.99';
-      const rating = product.ratingValue || 4.8;
+      const rating = (product.ratingValue || 4.8).toFixed(1);
+      const badge = product.badge || 'Elite Selection';
       
-      // Enforce standardized aspect ratio and flex utility as requested
+      const benefits = product.keyBenefits ? (Array.isArray(product.keyBenefits) ? product.keyBenefits : JSON.parse(product.keyBenefits)) : ['Superior Build', 'Premium Quality', 'Global Standards'];
+      const badgeIcon = badge.includes('Top') ? 'star' : (badge.includes('Trending') ? 'bolt' : 'lightbulb');
+      
+      // PREMIUM GLASS BADGE
+      const badgeHtml = `<div class="absolute top-6 left-6 z-10 flex items-center gap-2.5 px-4 py-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50">
+                          <span class="material-symbols-outlined text-base text-primary fill-primary">${badgeIcon}</span>
+                          <span class="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">${badge}</span>
+                        </div>`;
+
+      // SIZING LOGIC: Bigger relevant sizes
+      const cardWidth = options.variant === 'homepage' ? 'w-[320px] md:w-[420px] shrink-0' : 'w-full';
+
       return `
-        <article class="flex flex-col h-full bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 group" data-premium-card data-id="${product.id}">
-          <!-- Image Container: Fixed Aspect Ratio -->
-          <div class="w-full aspect-[4/3] overflow-hidden relative bg-gray-50">
-            <img src="${image}" alt="${name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.src='/assets/products/premium_product_placeholder.png'">
-            <div class="absolute top-4 left-4 z-10 px-3 py-1 bg-black/10 backdrop-blur-md rounded-full text-[9px] font-black text-black uppercase tracking-widest border border-black/5">
-              ${product.badge || 'Elite'}
-            </div>
+        <article class="${cardWidth} flex flex-col bg-white rounded-[2.5rem] shadow-[0_30px_100px_-20px_rgba(0,0,0,0.12)] hover:shadow-[0_40px_120px_-20px_rgba(0,0,0,0.18)] transition-all duration-700 overflow-hidden border-2 border-gray-50 group reveal-up" data-premium-card data-id="${product.id}">
+          <!-- Image Container: Portrait Aspect Ratio for Stately look -->
+          <div class="w-full aspect-[4/5] overflow-hidden relative bg-gray-50 uppercase">
+            ${badgeHtml}
+            <img src="${image}" alt="${name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2s] ease-out" onerror="this.src='/assets/products/premium_product_placeholder.png'">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
           </div>
 
-          <!-- Content Area: Flex Grow pushes buttons to bottom -->
-          <div class="p-5 flex flex-col flex-grow text-left">
-            <div class="flex items-center gap-2 mb-2">
-               <span class="text-[9px] font-black text-primary uppercase tracking-[0.3em] opacity-60">${product.category?.name || 'Collection'}</span>
+          <!-- Content Area: Luxe Padding p-10 -->
+          <div class="p-10 flex flex-col flex-grow text-left">
+            <div class="flex items-center justify-between mb-6">
+               <span class="text-[11px] font-black text-primary uppercase tracking-[0.3em] opacity-40">${product.category?.name || 'Exclusive Domain'}</span>
+               <div class="flex items-center gap-2 px-4 py-1.5 bg-primary/5 rounded-full border border-primary/10">
+                  <span class="material-symbols-outlined text-sm text-primary fill-primary">star</span>
+                  <span class="text-xs font-bold text-gray-900 tracking-tighter">${rating}/5.0</span>
+               </div>
             </div>
-            <h3 class="text-xl font-headline text-gray-900 mb-2 italic line-clamp-1 leading-tight">${name}</h3>
-            <p class="text-xs text-gray-500 font-body mb-6 line-clamp-2 leading-relaxed italic opacity-80">${shortDesc}</p>
-            
-            <div class="mt-auto pt-4 flex flex-col gap-3">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-2xl font-bold text-gray-900 tracking-tighter">$${price}</span>
-                <div class="flex items-center gap-1 bg-primary/5 px-2 py-1 rounded-lg">
-                   <span class="material-symbols-outlined text-[10px] text-primary fill-primary">star</span>
-                   <span class="text-[10px] font-bold text-primary">${rating}</span>
-                </div>
-              </div>
 
-              <!-- Quick View Button (Standardized) -->
-              <button onclick="openQuickView('${product.id}')" class="w-full py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium text-sm flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-sm">visibility</span>
-                Quick View
-              </button>
+            <h3 class="text-3xl md:text-4xl font-headline text-gray-900 mb-4 italic leading-tight group-hover:text-primary transition-colors duration-500">${name}</h3>
+            <p class="text-base text-gray-500 font-body mb-8 line-clamp-2 leading-relaxed italic opacity-70">${shortDesc}</p>
+            
+            <!-- Key Benefits: Premium Spacing -->
+            <ul class="space-y-4 mb-10">
+              ${benefits.slice(0,3).map(b => `
+                <li class="flex items-start gap-4 text-[14px] text-gray-700 font-medium">
+                  <div class="p-0.5 rounded-full bg-primary/10 mt-0.5">
+                    <span class="material-symbols-outlined text-primary text-[10px] block">check</span>
+                  </div>
+                  <span class="opacity-90 tracking-tight">${b}</span>
+                </li>
+              `).join('')}
+            </ul>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+               <div class="flex items-baseline gap-3 mb-8">
+                 <span class="text-4xl font-bold text-gray-900 tracking-tighter">$${price}</span>
+                 <span class="text-sm text-gray-400 line-through tracking-normal opacity-50">$${(parseFloat(price) * 1.4).toFixed(2)}</span>
+               </div>
+
+              <div class="flex flex-col gap-4">
+                <a href="${product.affiliateUrl || '#'}" target="_blank" class="w-full py-5 bg-gradient-to-r from-black to-gray-800 text-white rounded-[1.2rem] hover:scale-[1.02] transition-all duration-500 font-bold text-base flex items-center justify-center gap-4 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)]">
+                  Check Latest Price
+                  <span class="material-symbols-outlined text-lg">payments</span>
+                </a>
+                <button onclick="openQuickView('${product.id}')" class="w-full py-5 bg-gray-50 text-gray-900 rounded-[1.2rem] hover:bg-gray-100 transition-all font-bold text-base flex items-center justify-center gap-4 border border-gray-100">
+                  Quick View
+                  <span class="material-symbols-outlined text-lg">unfold_more</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-center text-gray-400 mt-6 italic font-body opacity-60">Price and availability may vary on the partner website.</p>
             </div>
           </div>
         </article>
@@ -279,50 +333,53 @@ class MRTApp {
       return '';
     }
   }
-  }
 
-  renderBoutiqueProducts(products, category, container) {
-    const filtered = products.filter(p => p.category === category);
-    if (filtered.length === 0) {
-      container.innerHTML = `<p class="col-span-full text-center serif italic opacity-50 py-20 text-on-surface">No products in "${category}" yet.</p>`;
-      return;
+  renderBoutiqueProducts(products, categorySlug, container) {
+    try {
+      const list = products.filter(p => {
+         const matchByCatId = String(p.categoryId) === String(this.currentId);
+         const matchBySlug = (p.category && (p.category.slug === categorySlug || p.category === categorySlug));
+         return matchByCatId || matchBySlug;
+      });
+      
+      const sections = [
+        { badge: 'Top Picks', title: '⭐ Top Picks' },
+        { badge: 'Trending Now', title: '🔥 Trending Now' },
+        { badge: "Editor's Choice", title: "💡 Editor's Choice" }
+      ];
+
+      const unassigned = list.filter(p => !sections.some(s => (p.badge || '').includes(s.badge)));
+
+      container.innerHTML = sections.map(sec => {
+        const secProducts = list.filter(p => (p.badge || '').includes(sec.badge));
+        if (secProducts.length === 0) return '';
+        return `
+          <div class="category-section mb-32">
+            <div class="flex flex-col mb-16">
+               <h2 class="text-6xl md:text-8xl font-headline italic text-on-surface mb-4">${sec.title}</h2>
+               <div class="h-1 w-40 bg-primary/20" style="background-color: var(--category-primary, #914d0055);"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-12">
+              ${secProducts.map(p => this.createProductCard(p)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('') + (unassigned.length > 0 ? `
+          <div class="category-section mb-32">
+            <div class="flex flex-col mb-16">
+               <h2 class="text-6xl md:text-8xl font-headline italic text-on-surface mb-4">Elite Collection</h2>
+               <div class="h-1 w-40 opacity-20" style="background-color: var(--category-primary, #914d00);"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-12">
+              ${unassigned.map(p => this.createProductCard(p)).join('')}
+            </div>
+          </div>
+      ` : '');
+      
+      this.initCardInteractions('category-products-container');
+    } catch (err) {
+      console.error("[MRT] Failed to render Boutique products:", err);
     }
-
-    const sections = [
-      { badge: 'Top Pick', title: '⭐ Top Picks' },
-      { badge: 'Trending Now', title: '🔥 Trending Now' },
-      { badge: "Editor's Choice", title: "💡 Editor's Choice" }
-    ];
-
-    const unassigned = filtered.filter(p => !sections.some(s => s.badge === p.badge));
-
-    container.innerHTML = sections.map(sec => {
-      const secProducts = filtered.filter(p => p.badge === sec.badge);
-      if (secProducts.length === 0) return '';
-      return `
-        <div class="category-section mb-32">
-          <div class="flex flex-col mb-16">
-             <h2 class="text-6xl md:text-8xl font-headline italic text-on-surface mb-4">${sec.title}</h2>
-             <div class="h-1 w-40 bg-primary/20" style="background-color: var(--category-primary, #914d0055);"></div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-12">
-            ${secProducts.map(p => this.createProductCard(p)).join('')}
-          </div>
-        </div>
-      `;
-    }).join('') + (unassigned.length > 0 ? `
-        <div class="category-section mb-32">
-          <div class="flex flex-col mb-16">
-             <h2 class="text-6xl md:text-8xl font-headline italic text-on-surface mb-4">Elite Collection</h2>
-             <div class="h-1 w-40 opacity-20" style="background-color: var(--category-primary, #914d00);"></div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-12">
-            ${unassigned.map(p => this.createProductCard(p)).join('')}
-          </div>
-        </div>
-    ` : '');
-    
-    this.initCardInteractions('category-products-container');
   }
 
   initCardInteractions(targetId = null) {
@@ -431,11 +488,15 @@ class MRTApp {
         fetch(`/api/products?_t=${Date.now()}`)
       ]);
       
-      if (categories.length > 0) {
+      const categories = await catsRes.json();
+      const productsData = await productsRes.json();
+      const products = Array.isArray(productsData) ? productsData : (productsData.products || []);
+      
+      if (categories && categories.length > 0) {
         this.allCategories = categories;
         this.allProducts = products;
         
-        this.renderBentoGrid(categories);
+        this.renderCategoriesGrid(categories);
         this.renderDynamicCarousels(categories, products);
         this.updateSEO("Home", "Global Sourcing Platform");
       } else {
@@ -467,7 +528,7 @@ class MRTApp {
           el.innerHTML = `
             <a href="category.html?c=${c.slug}" class="w-full h-full block relative group">
                 <img src="${imgUrl}" alt="${c.name}" class="w-full h-full object-cover transition-transform duration-[1.5s] ${isLarge ? 'group-hover:scale-105' : 'group-hover:scale-110'}" onerror="this.src='/assets/products/premium_product_placeholder.png'">
-                <div class="absolute inset-0 bg-gradient-to-t ${bgCol} to-transparent flex flex-col ${isLarge ? 'justify-end p-16' : 'justify-end p-10'}">
+                <div class="absolute inset-0 bg-gradient-to-t ${bgCol} to-transparent flex flex-col ${isLarge ? 'p-16' : 'p-10'} justify-end">
                     <h3 class="${isLarge ? 'text-5xl mb-6' : 'text-3xl mb-3'} text-white font-headline italic">${c.name}</h3>
                     <p class="text-white/70 ${isLarge ? 'text-xl mb-10 max-w-xl' : 'text-sm mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-500'}">${c.description || 'Curated excellence for elite standards.'}</p>
                     <span class="inline-flex items-center text-primary-container font-bold uppercase tracking-widest text-[10px]">Explore Items <span class="material-symbols-outlined ml-2 text-sm">arrow_forward</span></span>
@@ -661,13 +722,26 @@ class MRTApp {
     });
   }
 
-  openQuickView(productId) {
+  async openQuickView(productId) {
     try {
-      const product = this.allProducts.find(p => String(p.id) === String(productId));
+      let product = this.allProducts.find(p => String(p.id) === String(productId));
+      
+      // Fallback: If not in state, fetch manually (Surgical restoration)
       if (!product) {
-        console.warn(`[MRT] Product ${productId} not found in state.`);
-        return;
+        console.warn(`[MRT] Product ${productId} not found in state. Fetching...`);
+        try {
+          const res = await fetch(`/api/products/${productId}`);
+          if (res.ok) {
+            product = await res.json();
+            // Optional: push to state to avoid refetch
+            this.allProducts.push(product);
+          }
+        } catch (e) {
+          console.error("[MRT] Quick fetch failed:", e);
+        }
       }
+
+      if (!product) return;
 
       const modal = document.getElementById('quick-view-modal');
       const img = document.getElementById('qv-image');

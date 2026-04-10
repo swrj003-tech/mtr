@@ -6,9 +6,12 @@ const router = express.Router();
 // GET /api/reviews/:productId
 router.get('/:productId', async (req, res) => {
   const { productId } = req.params;
+  const id = parseInt(productId);
+  if (isNaN(id)) return res.status(400).json({ error: 'Invalid product ID' });
+  
   try {
     const reviews = await prisma.review.findMany({
-      where: { productId },
+      where: { productId: id },
       orderBy: { createdAt: 'desc' },
     });
     res.json(reviews);
@@ -26,9 +29,12 @@ router.post('/', async (req, res) => {
   }
 
   try {
+    const pId = parseInt(productId);
+    if (isNaN(pId)) return res.status(400).json({ error: 'Invalid product ID' });
+
     const review = await prisma.review.create({
       data: {
-        productId,
+        productId: pId,
         userName,
         rating: parseInt(rating),
         comment,
@@ -41,7 +47,7 @@ router.post('/', async (req, res) => {
     const avgRating = allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length;
     
     await prisma.product.update({
-      where: { id: productId },
+      where: { id: pId },
       data: {
         reviewCount: allReviews.length,
         ratingValue: avgRating,
