@@ -177,8 +177,14 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'MRT International Server is healthy' });
 });
 
-// FINAL: Unified Static Serving for Restoration & Delivery
+// Final: Unified Static Serving for Restoration & Delivery
+app.use('/admin', express.static(path.join(__dirname, '../dist/admin')));
 app.use(express.static(path.join(__dirname, '../dist')));
+
+// Admin specific redirect to handle /admin without trailing slash
+app.get('/admin', (req, res) => {
+  res.redirect('/admin/');
+});
 
 // Robust Catch-all Middleware (Path-Agnostic for Express 5 compatibility)
 app.use((req, res, next) => {

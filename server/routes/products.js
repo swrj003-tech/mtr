@@ -21,7 +21,7 @@ router.get('/:id', async (req, res) => {
     });
     console.log(`[DEBUG] Data found: ${product ? product.name : 'NULL'}`);
     if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.set('Cache-Control', 'public, max-age=3600');
+
     res.json(parseJsonFields(product));
   } catch (err) {
     console.error(`[DEBUG] Error:`, err);
@@ -67,7 +67,7 @@ router.get('/', async (req, res) => {
       prisma.product.count({ where }),
     ]);
 
-    res.set('Cache-Control', 'public, max-age=3600');
+
     res.json({
       products: products.map(parseJsonFields),
       total,
@@ -88,7 +88,7 @@ router.get('/by-slug/:slug', async (req, res) => {
       include: { category: true },
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
-    res.set('Cache-Control', 'public, max-age=3600');
+
     res.json(parseJsonFields(product));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -105,7 +105,7 @@ router.get('/:id/related', async (req, res) => {
       take: 6,
       orderBy: { ratingValue: 'desc' },
     });
-    res.set('Cache-Control', 'public, max-age=3600');
+
     res.json(related.map(parseJsonFields));
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

@@ -64,18 +64,18 @@ class MRTApp {
     const category = urlParams.get('category') || urlParams.get('c');
     const id = urlParams.get('id');
     this.currentCategory = category || ID_MAP[id] || 'home-kitchen';
-    
+
     this.isBoutique = window.location.pathname.includes('category.html');
 
     this.injectLogos();
     this.init();
-    
+
     this.cart = new ShoppingCart();
-    
+
     // Global state for Quick View and persistence
     this.allProducts = [];
     this.allCategories = [];
-    
+
     // Bind global functions for onclick handlers
     window.openQuickView = (id) => this.openQuickView(id);
     window.closeQuickView = () => this.closeQuickView();
@@ -108,31 +108,31 @@ class MRTApp {
       const mobileBtn = document.getElementById('mobile-menu-btn');
       const mobileNav = document.getElementById('mobile-menu');
       if (mobileBtn && mobileNav) {
-         mobileBtn.addEventListener('click', () => {
-             mobileNav.classList.toggle('active');
-             const icon = mobileBtn.querySelector('.material-symbols-outlined');
-             if (icon) {
-               icon.textContent = mobileNav.classList.contains('active') ? 'close' : 'menu';
-             }
-         });
-         
-         // Close menu when clicking on a link
-         mobileNav.querySelectorAll('a').forEach(link => {
-           link.addEventListener('click', () => {
-             mobileNav.classList.remove('active');
-             const icon = mobileBtn.querySelector('.material-symbols-outlined');
-             if (icon) icon.textContent = 'menu';
-           });
-         });
-         
-         // Close menu when clicking outside
-         document.addEventListener('click', (e) => {
-           if (!mobileNav.contains(e.target) && !mobileBtn.contains(e.target)) {
-             mobileNav.classList.remove('active');
-             const icon = mobileBtn.querySelector('.material-symbols-outlined');
-             if (icon) icon.textContent = 'menu';
-           }
-         });
+        mobileBtn.addEventListener('click', () => {
+          mobileNav.classList.toggle('active');
+          const icon = mobileBtn.querySelector('.material-symbols-outlined');
+          if (icon) {
+            icon.textContent = mobileNav.classList.contains('active') ? 'close' : 'menu';
+          }
+        });
+
+        // Close menu when clicking on a link
+        mobileNav.querySelectorAll('a').forEach(link => {
+          link.addEventListener('click', () => {
+            mobileNav.classList.remove('active');
+            const icon = mobileBtn.querySelector('.material-symbols-outlined');
+            if (icon) icon.textContent = 'menu';
+          });
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!mobileNav.contains(e.target) && !mobileBtn.contains(e.target)) {
+            mobileNav.classList.remove('active');
+            const icon = mobileBtn.querySelector('.material-symbols-outlined');
+            if (icon) icon.textContent = 'menu';
+          }
+        });
       }
 
       if (this.isBoutique) {
@@ -150,7 +150,7 @@ class MRTApp {
       // Export to global scope for button onclick events (Vite module fix)
       window.openQuickView = (id) => this.openQuickView(id);
       window.openReviewModal = (id, name) => this.openReviewModal(id, name);
-      
+
     } catch (err) {
       console.error('MRTApp Initialization Error:', err);
     }
@@ -178,27 +178,27 @@ class MRTApp {
       const productsData = await productsRes.json();
       const products = Array.isArray(productsData) ? productsData : (productsData.products || []);
       const categories = await catsRes.json();
-      
+
       this.allProducts = products;
       const themeData = categories.find(c => c.theme && c.slug === this.currentCategory);
       const theme = themeData ? themeData.theme : null;
 
       if (theme) {
         this.applyTheme(theme);
-        
+
         // Add SEO Header at top of category page
         const titleEl = document.getElementById('seo-title');
         const introEl = document.getElementById('seo-intro');
-        
+
         if (titleEl) {
-           titleEl.innerText = theme.seoTitle || `Top 10 Best ${theme.title} Products (2026)`;
-           titleEl.classList.add('text-gray-900', 'font-black'); // Force Contrast
+          titleEl.innerText = theme.seoTitle || `Top 10 Best ${theme.title} Products (2026)`;
+          titleEl.classList.add('text-gray-900', 'font-black'); // Force Contrast
         }
         if (introEl) {
-           introEl.innerText = theme.seoIntro || `Discover the most useful, trending, and top-rated ${theme.title.toLowerCase()} products carefully selected for quality and value.`;
-           introEl.classList.add('text-gray-800', 'font-medium'); // Force Contrast
+          introEl.innerText = theme.seoIntro || `Discover the most useful, trending, and top-rated ${theme.title.toLowerCase()} products carefully selected for quality and value.`;
+          introEl.classList.add('text-gray-800', 'font-medium'); // Force Contrast
         }
-        
+
         this.renderBoutiqueProducts(this.allProducts, this.currentCategory, container);
       } else {
         container.innerHTML = `<p class="col-span-full text-center serif italic opacity-50 py-20 animate-pulse text-on-surface">Synchronizing Collection for "${this.currentCategory}"...</p>`;
@@ -215,13 +215,13 @@ class MRTApp {
     const root = document.documentElement;
     const primary = theme.primary || '#914d00';
     const secondary = theme.secondary || '#f28c28';
-    
+
     root.style.setProperty('--category-primary', primary);
     root.style.setProperty('--category-secondary', secondary);
-    
+
     // Create a theme-aware semi-transparent glow for the premium cards
-    const glowColor = primary.startsWith('#') 
-      ? `rgba(${parseInt(primary.slice(1,3), 16)}, ${parseInt(primary.slice(3,5), 16)}, ${parseInt(primary.slice(5,7), 16)}, 0.15)`
+    const glowColor = primary.startsWith('#')
+      ? `rgba(${parseInt(primary.slice(1, 3), 16)}, ${parseInt(primary.slice(3, 5), 16)}, ${parseInt(primary.slice(5, 7), 16)}, 0.15)`
       : primary;
     root.style.setProperty('--category-primary-glow', glowColor);
 
@@ -232,44 +232,59 @@ class MRTApp {
   }
 
   updateSEO(title, description, isProduct = false, image = null) {
-      document.title = `${title} | MRT International`;
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.content = description || `Explore ${title} at MRT International.`;
-      
-      let schema = {};
-      if (isProduct) {
-          schema = {
-              "@context": "https://schema.org/",
-              "@type": "Product",
-              "name": title,
-              "description": description,
-              "image": image,
-              "brand": { "@type": "Brand", "name": "MRT International" }
-          };
-      } else {
-          schema = {
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "MRT International Holding LLC",
-              "url": window.location.origin
-          };
-      }
-      
-      let script = document.querySelector('#seo-json-ld');
-      if (!script) {
-          script = document.createElement('script');
-          script.type = 'application/ld+json';
-          script.id = 'seo-json-ld';
-          document.head.appendChild(script);
-      }
-      script.textContent = JSON.stringify(schema);
+    document.title = `${title} | MRT International`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.content = description || `Explore ${title} at MRT International.`;
+
+    let schema = {};
+    if (isProduct) {
+      schema = {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": title,
+        "description": description,
+        "image": image,
+        "brand": { "@type": "Brand", "name": "MRT International" }
+      };
+    } else {
+      schema = {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "MRT International Holding LLC",
+        "url": window.location.origin
+      };
+    }
+
+    let script = document.querySelector('#seo-json-ld');
+    if (!script) {
+      script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.id = 'seo-json-ld';
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(schema);
   }
 
   createProductCard(product, options = {}) {
     try {
       const name = product.name || 'Premium Product';
       const shortDesc = product.shortBenefit || 'Premium quality product selected for elite needs.';
-      const image = product.image || '/assets/products/premium_product_placeholder.png';
+      
+      // SUPERIOR: Smart Image Resolving Engine
+      let image = product.image || '/assets/products/premium_product_placeholder.png';
+      if (image.includes('placeholder')) {
+         const cleanName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+         // Try to match specific common files or just use the cleaned name
+         const mapping = {
+            'vegetable-chopper': 'vegetable_chopper.png',
+            'electric-spin-scrubber': 'electric_spin_scrubber.png',
+            'pet-hair-remover-roller': 'pet-hair-remover.png',
+            'baby-nail-trimmer': 'baby-clipper-premium.png'
+         };
+         const mappedFile = mapping[cleanName] || `${cleanName}.png`;
+         image = `/assets/products/${mappedFile}`;
+      }
+      
       const price = product.price ? product.price.toFixed(2) : '39.99';
       const rating = (product.ratingValue || 4.8).toFixed(1);
       const isCarousel = options.isCarousel || false;
@@ -277,7 +292,6 @@ class MRTApp {
       
       const benefits = product.keyBenefits ? (Array.isArray(product.keyBenefits) ? product.keyBenefits : JSON.parse(product.keyBenefits)) : ['Superior Build', 'Premium Quality', 'Global Standards'];
       const badgeIcon = badge.includes('Top') ? 'star' : (badge.includes('Trending') ? 'bolt' : 'lightbulb');
-      
       // PREMIUM GLASS BADGE - Compact version
       const badgeHtml = `<div class="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1 bg-white/90 backdrop-blur-xl rounded-full shadow-lg border border-white/50">
                           <span class="material-symbols-outlined text-[10px] text-primary fill-primary">${badgeIcon}</span>
@@ -333,15 +347,14 @@ class MRTApp {
           </div>
         </article>
       `;
-            </div>
-          </div>
-        </article>
-      `;
     } catch (err) {
       console.error("[MRT] Error creating product card:", err);
       return '';
     }
   }
+
+
+
 
   renderBoutiqueProducts(products, categorySlug, container) {
     try {
@@ -350,46 +363,90 @@ class MRTApp {
          const matchBySlug = (p.category && (p.category.slug === categorySlug || p.category === categorySlug));
          return matchByCatId || matchBySlug;
       });
-      
-      const sections = [
-        { badge: 'Top Picks', title: '⭐ Top Picks' },
-        { badge: 'Trending Now', title: '🔥 Trending Now' },
-        { badge: "Editor's Choice", title: "💡 Editor's Choice" }
-      ];
 
-      const unassigned = list.filter(p => !sections.some(s => (p.badge || '').includes(s.badge)));
+      if (list.length === 0) {
+        container.innerHTML = `<p class="col-span-full text-center serif italic opacity-40 py-20">No products found in this collection.</p>`;
+        return;
+      }
 
-      container.innerHTML = sections.map(sec => {
-        const secProducts = list.filter(p => (p.badge || '').includes(sec.badge));
-        if (secProducts.length === 0) return '';
-        return `
-          <div class="category-section mb-32">
-            <div class="flex flex-col mb-16">
-               <h2 class="text-6xl md:text-8xl font-headline italic text-on-surface mb-4">${sec.title}</h2>
-               <div class="h-1 w-40 bg-primary/20" style="background-color: var(--category-primary, #914d0055);"></div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-12">
-              ${secProducts.map(p => this.createProductCard(p)).join('')}
-            </div>
+      const categoryName = list[0].category?.name || 'Exclusive Collection';
+      const categoryTheme = list[0].category?.theme || {};
+      const primaryColor = categoryTheme.primary || 'var(--primary)';
+
+      // Premium Hero Design
+      const heroHtml = `
+        <div class="relative w-full py-24 md:py-32 mb-16 overflow-hidden rounded-[3rem] bg-gray-900 text-white">
+          <div class="absolute inset-0 opacity-40">
+            <img src="/assets/categories/${categorySlug}.png" class="w-full h-full object-cover blur-sm" onerror="this.src='/assets/hero-bg.jpg'">
           </div>
-        `;
-      }).join('') + (unassigned.length > 0 ? `
-          <div class="category-section mb-32">
-            <div class="flex flex-col mb-16">
-               <h2 class="text-6xl md:text-8xl font-headline italic text-on-surface mb-4">Elite Collection</h2>
-               <div class="h-1 w-40 opacity-20" style="background-color: var(--category-primary, #914d00);"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent"></div>
+          <div class="relative z-10 px-8 md:px-16 max-w-4xl">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-6">
+               <span class="material-symbols-outlined text-sm text-primary">diamond</span>
+               <span class="text-[10px] font-bold uppercase tracking-[0.2em]">${categoryName} Portfolio</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-12">
-              ${unassigned.map(p => this.createProductCard(p)).join('')}
-            </div>
+            <h1 class="text-4xl md:text-6xl font-headline italic mb-6 leading-tight">${categoryName}</h1>
+            <p class="text-lg md:text-xl text-white/70 font-body leading-relaxed max-w-2xl mb-8">${categoryTheme.seoIntro || 'Meticulously sourced, boutique-grade essentials selected for the MRT International global standard.'}</p>
           </div>
-      ` : '');
+        </div>
+      `;
+
+      // Get unique badges for filter pills
+      const badges = [...new Set(list.map(p => p.badge).filter(Boolean))];
+
+      container.innerHTML = `
+        ${heroHtml}
+        <div class="mb-12">
+          <div class="flex flex-wrap items-center gap-3 mb-10 overflow-x-auto pb-4 no-scrollbar">
+            <button class="category-filter-pill active px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] border border-gray-100 shadow-sm transition-all duration-300 bg-gray-900 text-white" data-filter="all">
+              Curated All <span class="ml-2 opacity-50 font-medium">${list.length}</span>
+            </button>
+            ${badges.map(b => {
+              const count = list.filter(p => p.badge === b).length;
+              return `<button class="category-filter-pill px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] border border-gray-100 shadow-sm transition-all duration-300 bg-white text-gray-400 hover:text-gray-900 hover:border-gray-200" data-filter="${b}">
+                ${b} <span class="ml-2 opacity-30 font-medium">${count}</span>
+              </button>`;
+            }).join('')}
+          </div>
+          
+          <div id="category-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            ${list.map((p, i) => `<div class="category-card-wrapper" data-badge="${p.badge || ''}" style="animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${i * 0.05}s both;">${this.createProductCard(p)}</div>`).join('')}
+          </div>
+        </div>
+      `;
+
+      // Filter pill interactivity
+      container.querySelectorAll('.category-filter-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          container.querySelectorAll('.category-filter-pill').forEach(p => {
+            p.classList.remove('bg-gray-900', 'text-white', 'active');
+            p.classList.add('bg-white', 'text-gray-400');
+          });
+          pill.classList.remove('bg-white', 'text-gray-400');
+          pill.classList.add('bg-gray-900', 'text-white', 'active');
+
+          const filter = pill.dataset.filter;
+          container.querySelectorAll('.category-card-wrapper').forEach((card, idx) => {
+            const badge = card.dataset.badge;
+            const show = filter === 'all' || badge === filter;
+            if (show) {
+              card.classList.remove('hidden');
+              card.style.animation = 'none';
+              card.offsetHeight; // force reflow
+              card.style.animation = `fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${idx * 0.03}s both`;
+            } else {
+              card.classList.add('hidden');
+            }
+          });
+        });
+      });
       
       this.initCardInteractions('category-products-container');
     } catch (err) {
       console.error("[MRT] Failed to render Boutique products:", err);
     }
   }
+
 
   initCardInteractions(targetId = null) {
     const selector = targetId ? `#${targetId} [data-premium-card]` : '[data-premium-card]';
@@ -788,10 +845,13 @@ class MRTApp {
       price.textContent = `$${product.price ? product.price.toFixed(2) : '39.99'}`;
       link.href = product.affiliateUrl || '#';
       if (badge) badge.textContent = product.badge || 'Elite Pick';
-      if (rating) rating.innerHTML = `
-        <span class="material-symbols-outlined text-sm fill-primary">star</span>
-        <span class="text-xs font-bold">${product.ratingValue || 4.9} / 5</span>
-      `;
+      if (rating) {
+        const ratingVal = parseFloat(product.ratingValue || 4.9).toFixed(1);
+        rating.innerHTML = `
+          <span class="material-symbols-outlined text-sm fill-primary">star</span>
+          <span class="text-xs font-bold">${ratingVal} / 5</span>
+        `;
+      }
 
       // Show Modal
       modal.classList.remove('hidden');
@@ -816,7 +876,7 @@ class MRTApp {
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4';
     overlay.innerHTML = `
-      <div class="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
         <button class="absolute top-6 right-6 text-on-surface/40 hover:text-on-surface" id="close-modal">
           <span class="material-symbols-outlined text-3xl">close</span>
         </button>
@@ -849,7 +909,7 @@ class MRTApp {
           </div>
         </div>
       </div>
-    `;
+        `;
 
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
@@ -868,7 +928,7 @@ class MRTApp {
         listEl.innerHTML = `<div class="py-10 text-center opacity-30 italic">No reviews yet. Be the first to share your thoughts!</div>`;
       } else {
         listEl.innerHTML = reviews.map(r => `
-          <div class="p-6 bg-white/40 rounded-3xl border border-white/60">
+        <div class="p-6 bg-white/40 rounded-3xl border border-white/60">
             <div class="flex justify-between items-center mb-3">
               <span class="font-bold text-primary">${r.userName}</span>
               <div class="flex text-orange-500 scale-75 transform-gpu">

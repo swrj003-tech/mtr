@@ -452,6 +452,52 @@
       @apply px-4;
     }
   }
+
+  /* Category Filter Pills */
+  .category-filter-pill {
+    @apply cursor-pointer backdrop-blur-md shadow-sm;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .category-filter-pill:hover {
+    @apply -translate-y-1 shadow-md;
+  }
+  .category-filter-pill.active {
+    @apply shadow-[0_10px_20px_-5px_var(--category-primary-glow)] scale-105;
+  }
+
+  /* Grid Layout Dynamics */
+  .category-card-wrapper {
+    @apply transition-all duration-500;
+  }
+
+  /* Keyframes for new animations */
+  @keyframes fadeSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes shine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+
+  .shine-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  .shine-effect::after {
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent;
+    content: '';
+    left: -100%;
+    transform: skewX(-25deg);
+    animation: shine 3s infinite;
+  }
 }
 
 /* Custom Premium Scrollbar */

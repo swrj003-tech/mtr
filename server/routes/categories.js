@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
       orderBy: { sortOrder: 'asc' },
       include: { theme: true, _count: { select: { products: true } } },
     });
-    res.set('Cache-Control', 'public, max-age=3600');
+
     res.json(categories);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -34,7 +34,7 @@ router.get('/:slug', async (req, res) => {
       cons: JSON.parse(p.cons || '[]'),
       tags: JSON.parse(p.tags || '[]'),
     }));
-    res.set('Cache-Control', 'public, max-age=3600');
+
     res.json(category);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
