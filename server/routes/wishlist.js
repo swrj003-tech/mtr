@@ -3,34 +3,57 @@ import prisma from '../db.js';
 
 const router = express.Router();
 
-// Get wishlist by session
+function safeJsonParse(val, fallback) {
+  try { return val ? JSON.parse(val) : fallback; } catch { return fallback; }
+}
+
+// GET /api/wishlist?sid=<deviceId>
 router.get('/', async (req, res) => {
   try {
-    const sid = req.query.sid;
-    if (!sid) return res.json([]);
+    // NOTE: Schema uses 'deviceId', not 'sessionId'.
+    const deviceId = req.query.sid;
+    if (!deviceId) return res.json([]);
+
     const items = await prisma.wishlistItem.findMany({
-      where: { sessionId: sid },
-      include: { product: { include: { category: { select: { slug: true, name: true } } } } },
+      where: { deviceId },
+      include: {
+        product: {
+          include: { category: { select: { slug: true, name: true } } },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
+
     items.forEach(item => {
-      item.product.keyBenefits = JSON.parse(item.product.keyBenefits || '[]');
+      item.product.keyBenefits = safeJsonParse(item.product.keyBenefits, []);
     });
+
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Add to wishlist
+// POST /api/wishlist
 router.post('/', async (req, res) => {
   try {
-    const { sessionId, productId } = req.body;
-    if (!sessionId || !productId) return res.status(400).json({ error: 'sessionId and productId required' });
-    const item = await prisma.wishlistItem.upsert({
-      where: { sessionId_productId: { sessionId, productId } },
-      update: {},
-      create: { sessionId, productId },
+    // Accept either sessionId or deviceId from frontend
+    const deviceId = req.body.sessionId || req.body.deviceId;
+    const productId = parseInt(req.body.productId);
+
+    if (!deviceId || isNaN(productId)) {
+      return res.status(400).json({ error: 'deviceId (or sessionId) and productId required' });
+    }
+
+    // Use findFirst + create instead of upsert (schema has no @@unique on deviceId+productId)
+    const existing = await prisma.wishlistItem.findFirst({
+      where: { deviceId, productId },
+    });
+
+    if (existing) return res.status(201).json(existing);
+
+    const item = await prisma.wishlistItem.create({
+      data: { deviceId, productId },
     });
     res.status(201).json(item);
   } catch (err) {
@@ -38,12 +61,16 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Remove from wishlist
+// DELETE /api/wishlist/:productId?sid=<deviceId>
 router.delete('/:productId', async (req, res) => {
   try {
-    const sid = req.query.sid;
-    if (!sid) return res.status(400).json({ error: 'sid required' });
-    await prisma.wishlistItem.deleteMany({ where: { sessionId: sid, productId: req.params.productId } });
+    const deviceId = req.query.sid;
+    const productId = parseInt(req.params.productId);
+
+    if (!deviceId) return res.status(400).json({ error: 'sid required' });
+    if (isNaN(productId)) return res.status(400).json({ error: 'Invalid product ID' });
+
+    await prisma.wishlistItem.deleteMany({ where: { deviceId, productId } });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

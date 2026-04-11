@@ -42,7 +42,7 @@ router.post('/upload', authMiddleware, adminOnly, upload.array('files', 10), asy
           size: file.size,
           url: `/assets/uploads/${file.filename}`,
           altText: req.body.altText || '',
-          uploadedBy: req.user?.id || '',
+          uploadedBy: String(req.user?.id || ''),
         },
       });
       files.push(media);
@@ -64,7 +64,9 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.delete('/:id', authMiddleware, adminOnly, async (req, res) => {
   try {
-    await prisma.mediaFile.delete({ where: { id: req.params.id } });
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
+    await prisma.mediaFile.delete({ where: { id } });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

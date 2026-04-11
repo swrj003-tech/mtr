@@ -8,21 +8,29 @@ const router = express.Router();
 // Public: Track click and redirect
 router.get('/redirect/:productId', async (req, res) => {
   try {
-    const product = await prisma.product.findUnique({ where: { id: req.params.productId } });
+    const productId = parseInt(req.params.productId);
+    if (isNaN(productId)) return res.status(400).json({ error: 'Invalid product ID' });
+
+    const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
+    // AffiliateClick schema fields: productId (Int), ip (String?), userAgent (String?), clickedAt (DateTime)
+    // REMOVED: source, ipHash, sessionId — not in AffiliateClick schema
+    // ipHash → mapped to 'ip' (hashed for privacy)
     const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex').slice(0, 16);
+
     await prisma.affiliateClick.create({
       data: {
         productId: product.id,
-        source: req.query.source || req.headers.referer || '',
+        ip: ipHash,                                              // schema field is 'ip', not 'ipHash'
         userAgent: (req.headers['user-agent'] || '').slice(0, 200),
-        ipHash,
-        sessionId: req.query.sid || '',
+        // REMOVED: source    — not in AffiliateClick schema
+        // REMOVED: sessionId — not in AffiliateClick schema
       },
     });
 
-    const redirectUrl = product.affiliateUrl || `https://wa.me/?text=I+am+interested+in+${encodeURIComponent(product.name)}`;
+    const redirectUrl = product.affiliateUrl
+      || `https://wa.me/?text=I+am+interested+in+${encodeURIComponent(product.name)}`;
     res.redirect(302, redirectUrl);
   } catch (err) {
     console.error('Affiliate redirect error:', err);
@@ -34,13 +42,17 @@ router.get('/redirect/:productId', async (req, res) => {
 router.get('/analytics', authMiddleware, adminOnly, async (req, res) => {
   try {
     const { days = 30 } = req.query;
+    // AffiliateClick only has 'clickedAt', not 'createdAt'
     const since = new Date(Date.now() - parseInt(days) * 86400000);
 
-    const totalClicks = await prisma.affiliateClick.count({ where: { createdAt: { gte: since } } });
+    const totalClicks = await prisma.affiliateClick.count({
+      where: { clickedAt: { gte: since } },
+    });
+
     const topProducts = await prisma.affiliateClick.groupBy({
       by: ['productId'],
       _count: { id: true },
-      where: { createdAt: { gte: since } },
+      where: { clickedAt: { gte: since } },
       orderBy: { _count: { id: 'desc' } },
       take: 10,
     });
@@ -51,9 +63,9 @@ router.get('/analytics', authMiddleware, adminOnly, async (req, res) => {
     });
 
     const dailyClicks = await prisma.affiliateClick.groupBy({
-      by: ['createdAt'],
+      by: ['clickedAt'],
       _count: { id: true },
-      where: { createdAt: { gte: since } },
+      where: { clickedAt: { gte: since } },
     });
 
     res.json({

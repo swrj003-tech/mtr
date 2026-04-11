@@ -5,6 +5,20 @@ import { invalidateCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
+// Helper: safely parse product JSON fields that exist in the Product schema
+function parseProductFields(p) {
+  return {
+    ...p,
+    keyBenefits: safeJsonParse(p.keyBenefits, []),
+    tags: safeJsonParse(p.tags, []),
+    // REMOVED: pros / cons — not fields on Product model
+  };
+}
+
+function safeJsonParse(val, fallback) {
+  try { return val ? JSON.parse(val) : fallback; } catch { return fallback; }
+}
+
 // Public: List all categories with themes
 router.get('/', async (req, res) => {
   try {
@@ -12,7 +26,6 @@ router.get('/', async (req, res) => {
       orderBy: { sortOrder: 'asc' },
       include: { theme: true, _count: { select: { products: true } } },
     });
-
     res.json(categories);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -24,16 +37,15 @@ router.get('/:slug', async (req, res) => {
   try {
     const category = await prisma.category.findUnique({
       where: { slug: req.params.slug },
-      include: { theme: true, products: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } },
+      include: {
+        theme: true,
+        products: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+      },
     });
     if (!category) return res.status(404).json({ error: 'Category not found' });
-    category.products = category.products.map(p => ({
-      ...p,
-      keyBenefits: JSON.parse(p.keyBenefits || '[]'),
-      pros: JSON.parse(p.pros || '[]'),
-      cons: JSON.parse(p.cons || '[]'),
-      tags: JSON.parse(p.tags || '[]'),
-    }));
+
+    // Only parse fields that actually exist on Product
+    category.products = category.products.map(parseProductFields);
 
     res.json(category);
   } catch (err) {
@@ -44,14 +56,28 @@ router.get('/:slug', async (req, res) => {
 // Admin: Create category
 router.post('/', authMiddleware, adminOnly, async (req, res) => {
   try {
-    const { name, slug, description, image, parentId, metaTitle, metaDescription, sortOrder, theme } = req.body;
+    const { name, slug, image, sortOrder, theme } = req.body;
+    // REMOVED from data: description, parentId, metaTitle, metaDescription
+    // — none of these exist on the Category model in schema.prisma.
+    // To add them, uncomment in schema.prisma and run: npx prisma migrate dev
     const category = await prisma.category.create({
       data: {
-        name, description, image, parentId: parentId || null,
+        name,
         slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        metaTitle: metaTitle || '', metaDescription: metaDescription || '',
+        image: image || null,
         sortOrder: sortOrder || 0,
-        ...(theme ? { theme: { create: { title: theme.title || name, subtitle: theme.subtitle, primary: theme.primary || '#914d00', secondary: theme.secondary || '#f28c28', seoTitle: theme.seoTitle, seoIntro: theme.seoIntro } } } : {}),
+        ...(theme ? {
+          theme: {
+            create: {
+              title: theme.title || name,
+              subtitle: theme.subtitle || '',
+              primary: theme.primary || '#914d00',
+              secondary: theme.secondary || '#f28c28',
+              seoTitle: theme.seoTitle || null,
+              seoIntro: theme.seoIntro || null,
+            },
+          },
+        } : {}),
       },
       include: { theme: true },
     });
@@ -65,28 +91,41 @@ router.post('/', authMiddleware, adminOnly, async (req, res) => {
 // Admin: Update category
 router.put('/:id', authMiddleware, adminOnly, async (req, res) => {
   try {
-    const { name, slug, description, image, parentId, metaTitle, metaDescription, sortOrder, theme } = req.body;
+    const { name, slug, image, sortOrder, theme } = req.body;
+    const id = parseInt(req.params.id);
+
+    // REMOVED: description, parentId, metaTitle, metaDescription — not in Category schema
     const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (slug !== undefined) updateData.slug = slug;
-    if (description !== undefined) updateData.description = description;
-    if (image !== undefined) updateData.image = image;
-    if (parentId !== undefined) updateData.parentId = parentId;
-    if (metaTitle !== undefined) updateData.metaTitle = metaTitle;
-    if (metaDescription !== undefined) updateData.metaDescription = metaDescription;
+    if (name !== undefined)      updateData.name      = name;
+    if (slug !== undefined)      updateData.slug      = slug;
+    if (image !== undefined)     updateData.image     = image;
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
 
-    const category = await prisma.category.update({ where: { id: parseInt(req.params.id) }, data: updateData });
+    const category = await prisma.category.update({
+      where: { id },
+      data: updateData,
+    });
 
     if (theme) {
       await prisma.categoryTheme.upsert({
-        where: { categoryId: parseInt(req.params.id) },
+        where: { categoryId: id },
         update: { ...theme },
-        create: { categoryId: parseInt(req.params.id), title: theme.title || category.name, ...theme },
+        create: {
+          categoryId: id,
+          title: theme.title || category.name,
+          subtitle: theme.subtitle || '',
+          primary: theme.primary || '#914d00',
+          secondary: theme.secondary || '#f28c28',
+          ...theme,
+        },
       });
     }
+
     invalidateCache();
-    const full = await prisma.category.findUnique({ where: { id: parseInt(req.params.id) }, include: { theme: true } });
+    const full = await prisma.category.findUnique({
+      where: { id },
+      include: { theme: true },
+    });
     res.json(full);
   } catch (err) {
     res.status(500).json({ error: err.message });

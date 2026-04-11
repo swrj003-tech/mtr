@@ -1,21 +1,21 @@
 const API = '/api';
 let token = localStorage.getItem('mrt_admin_token');
 let currentView = 'dashboard';
-
+ 
 // === API Helper (ENHANCED: Surgical Cache-Busting) ===
 async function api(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  
+ 
   let finalPath = path;
-  
+ 
   // Only cache-bust highly dynamic routes (products, categories, stats, reviews)
   const needsCacheBust = path.includes('/products') || path.includes('/categories') || path.includes('/stats') || path.includes('/reviews');
-  
+ 
   if ((!opts.method || opts.method === 'GET') && needsCacheBust) {
     finalPath += (path.includes('?') ? '&' : '?') + `_t=${Date.now()}`;
   }
-
+ 
   try {
     const res = await fetch(`${API}${finalPath}`, { ...opts, headers });
     if (res.status === 401) { logout(); return null; }
@@ -30,7 +30,7 @@ async function api(path, opts = {}) {
     return { error: 'Network or parse error' };
   }
 }
-
+ 
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
   el.className = `toast ${type}`;
@@ -38,22 +38,23 @@ function toast(msg, type = 'success') {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3000);
 }
-
+ 
 // === Router ===
 function navigate(view) {
   currentView = view;
   render();
 }
-
+ 
 function logout() {
   token = null;
   localStorage.removeItem('mrt_admin_token');
   render();
 }
-
+ 
 // === Main Render ===
 function render() {
   const app = document.getElementById('app');
+  if (!app) return;
   if (!token) { renderLogin(app); return; }
   renderLayout(app);
 }
@@ -98,7 +99,7 @@ function renderLogin(app) {
     } catch { toast('Connection error', 'error'); }
   });
 }
-
+ 
 // === Layout ===
 function renderLayout(app) {
   if (app.querySelector('.admin-layout')) {
@@ -106,12 +107,13 @@ function renderLayout(app) {
     renderView();
     return;
   }
-
+ 
   app.innerHTML = `
     <div class="admin-layout">
-      <button class="mobile-nav-toggle" id="mobile-nav-toggle">
-         <span class="material-symbols-outlined">menu</span>
+      <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation">
+        <span class="material-symbols-outlined">menu</span>
       </button>
+      <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
       <aside class="sidebar" id="sidebar-container"></aside>
       <main class="main-content" id="main-content"></main>
     </div>
@@ -120,13 +122,15 @@ function renderLayout(app) {
   renderView();
 
   const toggle = document.getElementById('mobile-nav-toggle');
-  if (toggle) {
-    toggle.addEventListener('click', () => {
-      document.getElementById('sidebar-container').classList.toggle('open');
-    });
-  }
+  const sidebar = document.getElementById('sidebar-container');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  function openSidebar() { sidebar.classList.add('open'); backdrop.classList.add('active'); document.body.style.overflow = 'hidden'; }
+  function closeSidebar() { sidebar.classList.remove('open'); backdrop.classList.remove('active'); document.body.style.overflow = ''; }
+  if (toggle) toggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+  if (backdrop) backdrop.addEventListener('click', closeSidebar);
+  document.addEventListener('click', (e) => { if (e.target.closest('.nav-item') && window.innerWidth <= 768) closeSidebar(); });
 }
-
+ 
 function updateSidebar() {
   const container = document.getElementById('sidebar-container');
   if (!container) return;
@@ -174,7 +178,7 @@ function updateSidebar() {
       </a>
     </div>
   `;
-
+ 
   container.querySelectorAll('.nav-item[data-view]').forEach(el => {
     el.addEventListener('click', () => {
       const view = el.dataset.view;
@@ -184,11 +188,11 @@ function updateSidebar() {
     });
   });
 }
-
+ 
 async function renderView() {
   const main = document.getElementById('main-content');
   if (!main) return;
-  
+ 
   // Ensure we have containers for each view
   let viewContainer = document.getElementById(`view-${currentView}`);
   if (!viewContainer) {
@@ -197,12 +201,12 @@ async function renderView() {
     viewContainer.className = 'view-container';
     main.appendChild(viewContainer);
   }
-
+ 
   // Hide all other views
   document.querySelectorAll('.view-container').forEach(el => el.style.display = 'none');
   viewContainer.style.display = 'block';
   viewContainer.innerHTML = '<div class="text-center mt-2"><div class="loading-spinner"></div></div>';
-
+ 
   switch (currentView) {
     case 'dashboard': await renderDashboard(viewContainer); break;
     case 'products': await renderProducts(viewContainer); break;
@@ -214,73 +218,85 @@ async function renderView() {
     default: await renderDashboard(viewContainer);
   }
 }
-
+ 
 // === Dashboard ===
 async function renderDashboard(main) {
+  // Show skeleton instantly so admin feels fast
+  main.innerHTML = `
+    <div class="page-header">
+      <div><h2>Dashboard</h2><div class="subtitle">MRT International Admin Panel</div></div>
+    </div>
+    <div class="stats-grid" id="stats-grid-container">
+      ${['Total Products','Categories','Affiliate Clicks','Subscribers','Testimonials'].map(label => `
+        <div class="stat-card" style="opacity:0.5">
+          <div class="stat-label">${label}</div>
+          <div class="stat-value" style="color:var(--border)">—</div>
+        </div>`).join('')}
+    </div>
+    <div class="table-container" id="activity-container">
+      <div style="text-align:center;padding:2rem;opacity:0.4">Loading activity...</div>
+    </div>
+  `;
+
   const stats = await api('/admin/stats');
   if (!stats) return;
 
-  main.innerHTML = `
-    <div class="page-header">
-      <div><h2>Dashboard</h2><div class="subtitle">Welcome to MRT International Admin</div></div>
+  // Update stats grid
+  document.getElementById('stats-grid-container').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon"><span class="material-symbols-outlined">inventory_2</span></div>
+      <div class="stat-label">Total Products</div>
+      <div class="stat-value">${stats.productCount || 0}</div>
     </div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon"><span class="material-symbols-outlined">inventory_2</span></div>
-        <div class="stat-label">Total Products</div>
-        <div class="stat-value">${stats.productCount || 0}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon"><span class="material-symbols-outlined">category</span></div>
-        <div class="stat-label">Categories</div>
-        <div class="stat-value">${stats.categoryCount || 0}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon"><span class="material-symbols-outlined">ads_click</span></div>
-        <div class="stat-label">Affiliate Clicks</div>
-        <div class="stat-value">${stats.clickCount || 0}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon"><span class="material-symbols-outlined">mail</span></div>
-        <div class="stat-label">Subscribers</div>
-        <div class="stat-value">${stats.subscriberCount || 0}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon"><span class="material-symbols-outlined">reviews</span></div>
-        <div class="stat-label">Testimonials</div>
-        <div class="stat-value">${stats.testimonialCount || 0}</div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-icon"><span class="material-symbols-outlined">category</span></div>
+      <div class="stat-label">Categories</div>
+      <div class="stat-value">${stats.categoryCount || 0}</div>
     </div>
-    <div class="table-container">
-      <div class="table-header">
-        <h3>Recent Activity</h3>
-      </div>
-      <table>
-        <thead><tr><th>Product</th><th>Event</th><th>Time</th></tr></thead>
-        <tbody>
-          ${(stats.recentClicks || []).map(c => `
-            <tr>
-              <td class="flex gap-1" style="align-items:center">
-                <img src="${c.product?.image || ''}" class="product-thumb" alt="">
-                <span>${c.product?.name || 'Unknown'}</span>
-              </td>
-              <td><span class="badge badge-info">Affiliate Click</span></td>
-              <td class="text-muted text-sm">${new Date(c.createdAt).toLocaleString()}</td>
-            </tr>
-          `).join('') || '<tr><td colspan="3" class="text-center text-muted" style="padding:2rem">No recent activity</td></tr>'}
-        </tbody>
-      </table>
+    <div class="stat-card">
+      <div class="stat-icon"><span class="material-symbols-outlined">ads_click</span></div>
+      <div class="stat-label">Affiliate Clicks</div>
+      <div class="stat-value">${stats.clickCount || 0}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon"><span class="material-symbols-outlined">mail</span></div>
+      <div class="stat-label">Subscribers</div>
+      <div class="stat-value">${stats.subscriberCount || 0}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon"><span class="material-symbols-outlined">reviews</span></div>
+      <div class="stat-label">Testimonials</div>
+      <div class="stat-value">${stats.testimonialCount || 0}</div>
     </div>
   `;
-}
 
+  document.getElementById('activity-container').innerHTML = `
+    <div class="table-header"><h3>Recent Activity</h3></div>
+    <table>
+      <thead><tr><th>Product</th><th>Event</th><th>Time</th></tr></thead>
+      <tbody>
+        ${(stats.recentClicks || []).map(c => `
+          <tr>
+            <td class="flex gap-1" style="align-items:center">
+              <img src="${c.product?.image || ''}" class="product-thumb" alt="">
+              <span>${c.product?.name || 'Unknown'}</span>
+            </td>
+            <td><span class="badge badge-info">Affiliate Click</span></td>
+            <td class="text-muted text-sm">${new Date(c.clickedAt || c.createdAt).toLocaleString()}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="3" class="text-center text-muted" style="padding:2rem">No recent activity</td></tr>'}
+      </tbody>
+    </table>
+  `;
+}
+ 
 // === Products ===
 async function renderProducts(main) {
   const data = await api('/products');
   const cats = await api('/categories');
   if (!data) return;
   const products = data.products || [];
-
+ 
   main.innerHTML = `
     <div class="page-header">
       <div><h2>Products</h2><div class="subtitle">${data.total || 0} products total</div></div>
@@ -308,7 +324,7 @@ async function renderProducts(main) {
       </table>
     </div>
   `;
-
+ 
   document.getElementById('btn-add-product')?.addEventListener('click', () => showProductModal(null, cats));
   document.querySelectorAll('.btn-edit-product').forEach(b => b.addEventListener('click', () => {
     const p = products.find(x => String(x.id) === String(b.dataset.id));
@@ -321,7 +337,7 @@ async function renderProducts(main) {
     renderView();
   }));
 }
-
+ 
 function showProductModal(product, categories) {
   const isEdit = !!product;
   const overlay = document.createElement('div');
@@ -379,16 +395,10 @@ function showProductModal(product, categories) {
             <label>Affiliate URL</label>
             <input type="url" name="affiliateUrl" value="${product?.affiliateUrl || ''}">
           </div>
-          <div class="form-group">
-            <label>Affiliate Source</label>
-            <input type="text" name="affiliateSource" value="${product?.affiliateSource || ''}" placeholder="amazon, walmart...">
-          </div>
+ 
         </div>
         <div class="grid-2">
-          <div class="form-group">
-            <label>Rating Display</label>
-            <input type="text" name="rating" value="${product?.rating || ''}" placeholder="4.8/5 Recommended">
-          </div>
+ 
           <div class="form-group">
             <label>Rating Value</label>
             <input type="number" name="ratingValue" value="${product?.ratingValue || ''}" step="0.1" max="5">
@@ -398,15 +408,20 @@ function showProductModal(product, categories) {
           <label>Key Benefits (one per line)</label>
           <textarea name="keyBenefits">${(product?.keyBenefits || []).join('\n')}</textarea>
         </div>
+ 
         <div class="grid-2">
           <div class="form-group">
-            <label>Meta Title (SEO)</label>
-            <input type="text" name="metaTitle" value="${product?.metaTitle || ''}">
+            <label>Sort Order</label>
+            <input type="number" name="sortOrder" value="${product?.sortOrder || 0}" min="0">
           </div>
-          <div class="form-group">
-            <label>Meta Description (SEO)</label>
-            <input type="text" name="metaDescription" value="${product?.metaDescription || ''}">
+          <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;padding-top:1.5rem;">
+            <input type="checkbox" name="isActive" id="isActive-check" value="true" ${(!product || product?.isActive !== false) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+            <label for="isActive-check" style="margin:0;font-size:0.875rem;cursor:pointer;">Active (visible on site)</label>
           </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea name="description" rows="3">${product?.description || ''}</textarea>
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
@@ -418,22 +433,24 @@ function showProductModal(product, categories) {
   document.body.appendChild(overlay);
   overlay.querySelector('#modal-cancel').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-
+ 
   const dropzone = overlay.querySelector('#product-dropzone');
   const imgInput = overlay.querySelector('#product-image-path');
   initDragAndDrop(dropzone, (url) => {
       imgInput.value = url;
       toast('Image uploaded successfully');
   });
-
+ 
   overlay.querySelector('#product-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const body = Object.fromEntries(fd.entries());
-    body.keyBenefits = body.keyBenefits.split('\n').filter(Boolean);
-    body.price = parseFloat(body.price);
-    body.ratingValue = parseFloat(body.ratingValue) || 0;
-
+    body.keyBenefits = (body.keyBenefits || '').split('\n').filter(Boolean);
+    body.price = parseFloat(body.price) || 0;
+    body.ratingValue = parseFloat(body.ratingValue) || 5.0;
+    body.sortOrder = parseInt(body.sortOrder) || 0;
+    body.isActive = body.isActive === 'true'; // checkbox: only present when checked
+ 
     if (isEdit) {
       const res = await api(`/products/${product.id}`, { method: 'PUT', body: JSON.stringify(body) });
       if (res?.error) { toast(res.error, 'error'); return; }
@@ -447,12 +464,12 @@ function showProductModal(product, categories) {
     setTimeout(() => renderView(), 100); // Small delay to allow DB sync/refresh UI
   });
 }
-
+ 
 // === Categories ===
 async function renderCategories(main) {
   const cats = await api('/categories');
   if (!cats) return;
-
+ 
   main.innerHTML = `
     <div class="page-header">
       <div><h2>Categories</h2><div class="subtitle">${cats.length} categories</div></div>
@@ -478,7 +495,7 @@ async function renderCategories(main) {
       </table>
     </div>
   `;
-
+ 
   document.getElementById('btn-add-cat')?.addEventListener('click', () => showCategoryModal(null));
   document.querySelectorAll('.btn-edit-cat').forEach(b => b.addEventListener('click', () => {
     const c = cats.find(x => String(x.id) === String(b.dataset.id));
@@ -491,7 +508,7 @@ async function renderCategories(main) {
     renderView();
   }));
 }
-
+ 
 function showCategoryModal(cat) {
   const isEdit = !!cat;
   const overlay = document.createElement('div');
@@ -539,14 +556,14 @@ function showCategoryModal(cat) {
   document.body.appendChild(overlay);
   overlay.querySelector('#modal-cancel').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-
+ 
   const dropzone = overlay.querySelector('#cat-dropzone');
   const imgInput = overlay.querySelector('#cat-image-path');
   initDragAndDrop(dropzone, (url) => {
       imgInput.value = url;
       toast('Category image uploaded');
   });
-
+ 
   overlay.querySelector('#cat-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -566,12 +583,12 @@ function showCategoryModal(cat) {
     renderView();
   });
 }
-
+ 
 // === Testimonials ===
 async function renderTestimonials(main) {
   const items = await api('/testimonials');
   if (!items) return;
-
+ 
   main.innerHTML = `
     <div class="page-header">
       <div><h2>Testimonials</h2><div class="subtitle">${items.length} reviews</div></div>
@@ -594,13 +611,13 @@ async function renderTestimonials(main) {
       </table>
     </div>
   `;
-
+ 
   document.querySelectorAll('.btn-del-test').forEach(b => b.addEventListener('click', async () => {
     if (!confirm('Delete?')) return;
     await api(`/testimonials/${b.dataset.id}`, { method: 'DELETE' });
     toast('Deleted'); renderView();
   }));
-
+ 
   document.getElementById('btn-add-test')?.addEventListener('click', () => {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -634,13 +651,13 @@ async function renderTestimonials(main) {
     });
   });
 }
-
+ 
 // === Analytics ===
 async function renderAnalytics(main) {
   const data = await api('/admin/analytics');
   const stats = await api('/admin/stats');
   if (!data || !stats) return;
-
+ 
   main.innerHTML = `
     <div class="page-header">
       <div><h2>Analytics</h2><div class="subtitle">Platform performance & engagement metrics</div></div>
@@ -662,7 +679,7 @@ async function renderAnalytics(main) {
         <div class="stat-value">${((stats.clickCount / (stats.productCount || 1)) * 100).toFixed(1)}%</div>
       </div>
     </div>
-
+ 
     <div class="analytics-row flex gap-6 mt-8">
       <div class="stat-card flex-1">
         <h3 class="font-headline mb-6" style="font-size:1rem;opacity:0.6">Category Distribution</h3>
@@ -676,7 +693,7 @@ async function renderAnalytics(main) {
         </div>
       </div>
     </div>
-
+ 
     <div class="table-container mt-10">
       <div class="table-header"><h3>Click Stream (Recent)</h3></div>
       <table>
@@ -687,7 +704,7 @@ async function renderAnalytics(main) {
               <td><strong>${c.product?.name || 'Unknown'}</strong></td>
               <td><span class="badge badge-info">${c.source || 'Direct'}</span></td>
               <td class="text-xs opacity-50 truncate max-w-xs">${c.userAgent || '-'}</td>
-              <td class="text-xs">${new Date(c.createdAt).toLocaleString()}</td>
+              <td class="text-xs">${new Date(c.clickedAt || c.createdAt).toLocaleString()}</td>
             </tr>
           `).join('') || '<tr><td colspan="4" class="text-center text-muted" style="padding:2rem">No clicks recorded</td></tr>'}
         </tbody>
@@ -695,12 +712,12 @@ async function renderAnalytics(main) {
     </div>
   `;
 }
-
+ 
 // === Reviews ===
 async function renderReviews(main) {
   const reviews = await api('/admin/reviews');
   if (!reviews) return;
-
+ 
   main.innerHTML = `
     <div class="page-header">
       <div><h2>Reviews</h2><div class="subtitle">${reviews.length} customer reviews total</div></div>
@@ -729,37 +746,37 @@ async function renderReviews(main) {
       </table>
     </div>
   `;
-
+ 
   document.querySelectorAll('.btn-verify-review').forEach(b => b.addEventListener('click', async () => {
     await api(`/admin/reviews/${b.dataset.id}/verify`, { method: 'POST' });
     toast('Review verified'); renderView();
   }));
-
+ 
   document.querySelectorAll('.btn-delete-review').forEach(b => b.addEventListener('click', async () => {
     if (!confirm('Delete this review?')) return;
     await api(`/reviews/${b.dataset.id}`, { method: 'DELETE' });
     toast('Review deleted'); renderView();
   }));
 }
-
+ 
 // === Support Functions ===
 function initDragAndDrop(dropzone, onUpload) {
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
         dropzone.addEventListener(name, (e) => { e.preventDefault(); e.stopPropagation(); });
     });
-
+ 
     dropzone.addEventListener('dragover', () => dropzone.classList.add('drag-active'));
     dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-active'));
     dropzone.addEventListener('drop', async (e) => {
         dropzone.classList.remove('drag-active');
         const files = Array.from(e.dataTransfer.files);
         if (!files.length) return;
-        
+ 
         const formData = new FormData();
         files.forEach(f => formData.append('files', f));
-        
+ 
         dropzone.innerHTML = '<div class="loading-spinner"></div>';
-        
+ 
         try {
             const res = await fetch(`${API}/media/upload`, {
                 method: 'POST',
@@ -775,7 +792,7 @@ function initDragAndDrop(dropzone, onUpload) {
             dropzone.innerHTML = `<span class="material-symbols-outlined">upload_file</span><span>Upload Completed</span>`;
         }
     });
-
+ 
     dropzone.addEventListener('click', () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -785,7 +802,7 @@ function initDragAndDrop(dropzone, onUpload) {
             if (!file) return;
             const formData = new FormData();
             formData.append('files', file);
-            
+ 
             dropzone.innerHTML = '<div class="loading-spinner"></div>';
             try {
                 const res = await fetch(`${API}/media/upload`, {
@@ -801,6 +818,6 @@ function initDragAndDrop(dropzone, onUpload) {
         input.click();
     });
 }
-
+ 
 // Boot
 render();

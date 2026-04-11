@@ -11,25 +11,25 @@ router.get('/stats', authMiddleware, async (req, res) => {
       prisma.product.count(),
       prisma.category.count(),
       prisma.affiliateClick.count(),
-      prisma.newsletterSub.count(), // FIXED: Matches schema model name
+      prisma.newsletterSub.count(),
       prisma.testimonial.count(),
       prisma.review.count(),
     ]);
 
     const recentClicks = await prisma.affiliateClick.findMany({
       take: 10,
-      orderBy: { clickedAt: 'desc' }, // FIXED: Matches schema field name
+      orderBy: { clickedAt: 'desc' }, // AffiliateClick uses clickedAt, not createdAt
       include: { product: { select: { name: true, image: true, categoryId: true } } },
     });
 
-    res.json({ 
-      productCount, 
-      categoryCount, 
-      clickCount, 
-      subscriberCount, 
-      testimonialCount, 
+    res.json({
+      productCount,
+      categoryCount,
+      clickCount,
+      subscriberCount,
+      testimonialCount,
       reviewCount,
-      recentClicks 
+      recentClicks,
     });
   } catch (err) {
     console.error('Admin Stats Error:', err);
@@ -40,16 +40,16 @@ router.get('/stats', authMiddleware, async (req, res) => {
 // GET /api/admin/analytics - Detailed click data for charts
 router.get('/analytics', authMiddleware, adminOnly, async (req, res) => {
   try {
+    // FIXED: AffiliateClick schema has 'clickedAt', not 'createdAt'
     const clicks = await prisma.affiliateClick.findMany({
       take: 1000,
-      orderBy: { createdAt: 'desc' },
-      include: { product: { select: { name: true, categoryId: true } } }
+      orderBy: { clickedAt: 'desc' },
+      include: { product: { select: { name: true, categoryId: true } } },
     });
-    
-    // Group by category for chart
+
     const categoryDistribution = await prisma.product.groupBy({
       by: ['categoryId'],
-      _count: true
+      _count: true,
     });
 
     res.json({ clicks, categoryDistribution });
@@ -63,7 +63,7 @@ router.get('/reviews', authMiddleware, adminOnly, async (req, res) => {
   try {
     const reviews = await prisma.review.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { product: { select: { name: true, image: true } } }
+      include: { product: { select: { name: true, image: true } } },
     });
     res.json(reviews);
   } catch (err) {
@@ -74,9 +74,13 @@ router.get('/reviews', authMiddleware, adminOnly, async (req, res) => {
 // POST /api/admin/reviews/:id/verify - Moderation
 router.post('/reviews/:id/verify', authMiddleware, adminOnly, async (req, res) => {
   try {
+    // FIXED: parseInt — Prisma expects Int, req.params.id is always a string
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid review ID' });
+
     const review = await prisma.review.update({
-      where: { id: req.params.id },
-      data: { isVerified: true }
+      where: { id },
+      data: { isVerified: true },
     });
     res.json(review);
   } catch (err) {

@@ -269,86 +269,113 @@ class MRTApp {
     try {
       const name = product.name || 'Premium Product';
       const shortDesc = product.shortBenefit || 'Premium quality product selected for elite needs.';
-      
-      // SUPERIOR: Smart Image Resolving Engine
-      let image = product.image || '/assets/products/premium_product_placeholder.png';
-      if (image.includes('placeholder')) {
-         const cleanName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-         // Try to match specific common files or just use the cleaned name
-         const mapping = {
-            'vegetable-chopper': 'vegetable_chopper.png',
-            'electric-spin-scrubber': 'electric_spin_scrubber.png',
-            'pet-hair-remover-roller': 'pet-hair-remover.png',
-            'baby-nail-trimmer': 'baby-clipper-premium.png'
-         };
-         const mappedFile = mapping[cleanName] || `${cleanName}.png`;
-         image = `/assets/products/${mappedFile}`;
-      }
-      
-      const price = product.price ? product.price.toFixed(2) : '39.99';
-      const rating = (product.ratingValue || 4.8).toFixed(1);
-      const isCarousel = options.isCarousel || false;
-      const badge = product.badge || 'Elite Selection';
-      
-      const benefits = product.keyBenefits ? (Array.isArray(product.keyBenefits) ? product.keyBenefits : JSON.parse(product.keyBenefits)) : ['Superior Build', 'Premium Quality', 'Global Standards'];
-      const badgeIcon = badge.includes('Top') ? 'star' : (badge.includes('Trending') ? 'bolt' : 'lightbulb');
-      // PREMIUM GLASS BADGE - Compact version
-      const badgeHtml = `<div class="absolute top-4 left-4 z-10 flex items-center gap-1.5 px-3 py-1 bg-white/90 backdrop-blur-xl rounded-full shadow-lg border border-white/50">
-                          <span class="material-symbols-outlined text-[10px] text-primary fill-primary">${badgeIcon}</span>
-                          <span class="text-[9px] font-black text-gray-900 uppercase tracking-widest">${badge}</span>
-                        </div>`;
 
-      // SIZING LOGIC: "Compact Premium"
-      const cardClass = isCarousel ? 'flex-shrink-0 w-[280px] md:w-[320px]' : 'w-full';
+      // Smart Image Resolving
+      let image = product.image || '/assets/products/premium_product_placeholder.png';
+      if (!image || image.includes('placeholder')) {
+        const cleanName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const mapping = {
+          'vegetable-chopper': 'vegetable_chopper.png',
+          'electric-spin-scrubber': 'electric_spin_scrubber.png',
+          'pet-hair-remover-roller': 'pet-hair-remover.png',
+          'baby-nail-trimmer': 'baby-clipper-premium.png'
+        };
+        image = `/assets/products/${mapping[cleanName] || cleanName + '.png'}`;
+      }
+
+      const price       = product.price ? parseFloat(product.price).toFixed(2) : '39.99';
+      const oldPrice    = (parseFloat(price) * 1.42).toFixed(2);
+      const rating      = (product.ratingValue || 4.8).toFixed(1);
+      const reviewCount = product.ratingCount || (Math.floor(Math.random() * 600) + 120);
+      const isCarousel  = options.isCarousel || false;
+      const badge       = product.badge || 'Top Pick';
+      const affiliateUrl = product.affiliateUrl || '#';
+      const productId   = product.id;
+      const catName     = product.category?.name || 'Premium Collection';
+
+      // Star render helper
+      const filledStars = Math.round(parseFloat(rating));
+      const stars = [1,2,3,4,5].map(n =>
+        `<span class="mso" style="font-size:13px;color:${n <= filledStars ? '#f59e0b' : '#e5e7eb'};font-variation-settings:'FILL' 1">star</span>`
+      ).join('');
+
+      const cardWidth = isCarousel ? 'mrt-card-carousel' : 'mrt-card-grid';
 
       return `
-        <article class="${cardClass} flex flex-col bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 group reveal-up" data-premium-card data-id="${product.id}">
-          <!-- Image Container: Square for Consistency -->
-          <div class="w-full aspect-square overflow-hidden relative bg-gray-50 uppercase">
-            ${badgeHtml}
-            <img src="${image}" alt="${name}" loading="lazy" class="w-full h-full object-contain p-6 group-hover:scale-110 transition-transform duration-[1.5s] ease-out" onerror="this.src='/assets/products/premium_product_placeholder.png'">
-            <div class="product-shine"></div>
-          </div>
+        <article class="mrt-product-card ${cardWidth} group" data-premium-card data-id="${productId}">
 
-          <!-- Content Area -->
-          <div class="p-6 flex flex-col flex-grow text-left">
-            <div class="flex items-center justify-between mb-3">
-               <span class="text-[9px] font-black text-primary uppercase tracking-[0.3em] opacity-40">${product.category?.name || 'Exclusive Domain'}</span>
-               <div class="flex items-center gap-1.5 px-2.5 py-1 bg-primary/5 rounded-lg border border-primary/10">
-                  <span class="material-symbols-outlined text-[10px] text-primary fill-primary">star</span>
-                  <span class="text-[10px] font-bold text-gray-900 tracking-tighter">${rating}</span>
-               </div>
+          <!-- ── IMAGE ZONE ─────────────────────────── -->
+          <div class="mrt-card-img-wrap">
+
+            <!-- Badge + Discount -->
+            <div class="mrt-badge-row">
+              <div class="mrt-badge-pill">${badge}</div>
+              <div class="mrt-discount-pill">-29%</div>
             </div>
 
-            <h3 class="text-xl font-headline text-gray-900 mb-2 italic leading-tight group-hover:text-primary transition-colors duration-500 line-clamp-1 h-[1.2em]">${name}</h3>
-            <p class="text-xs text-gray-500 font-body mb-6 line-clamp-2 leading-relaxed italic opacity-70 h-[3em]">${shortDesc}</p>
-            
-            <div class="mt-auto pt-6 border-t border-gray-50">
-               <div class="flex items-baseline gap-2 mb-6">
-                 <span class="text-2xl font-bold text-gray-900 tracking-tighter">$${price}</span>
-                 <span class="text-[10px] text-gray-400 line-through tracking-normal opacity-50">$${(parseFloat(price) * 1.4).toFixed(2)}</span>
-               </div>
+            <!-- Product image –– object-contain inside neutral bg -->
+            <img
+              src="${image}"
+              alt="${name}"
+              loading="lazy"
+              class="mrt-card-img"
+              onerror="this.src='/assets/products/premium_product_placeholder.png'">
 
-              <div class="flex flex-col gap-3">
-                <a href="${product.affiliateUrl || '#'}" target="_blank" class="w-full py-4 bg-black text-white rounded-xl hover:scale-[1.02] transition-all duration-300 font-bold text-[10px] tracking-[0.2em] flex items-center justify-center gap-3 shadow-lg shimmer-btn">
-                  CHECK PRICE
-                  <span class="material-symbols-outlined text-sm">payments</span>
-                </a>
-                <button onclick="openQuickView('${product.id}')" class="w-full py-4 bg-gray-50 text-gray-900 rounded-xl hover:bg-gray-100 transition-all font-bold text-[10px] tracking-[0.2em] flex items-center justify-center gap-3 border border-gray-100">
-                  QUICK VIEW
-                  <span class="material-symbols-outlined text-sm">unfold_more</span>
-                </button>
-              </div>
+            <!-- Hover Overlay: Quick View text -->
+            <div class="mrt-img-overlay">
+              <button class="mrt-qv-overlay-btn" data-qv-btn data-id="${productId}">
+                <span class="mso" style="font-size:20px">visibility</span>
+                Quick View
+              </button>
             </div>
           </div>
-        </article>
-      `;
+
+          <!-- ── CONTENT ZONE ──────────────────────── -->
+          <div class="mrt-card-body">
+
+            <!-- Category + Rating row -->
+            <div class="mrt-card-meta">
+              <span class="mrt-card-category">${catName}</span>
+              <div class="mrt-card-stars">${stars} <span class="mrt-review-count">(${reviewCount})</span></div>
+            </div>
+
+            <!-- Name -->
+            <h3 class="mrt-card-name">${name}</h3>
+
+            <!-- Desc -->
+            <p class="mrt-card-desc">${shortDesc}</p>
+
+            <!-- Price -->
+            <div class="mrt-price-row">
+              <span class="mrt-price">$${price}</span>
+              <span class="mrt-old-price">$${oldPrice}</span>
+              <span class="mrt-save-pill">Save 29%</span>
+            </div>
+
+            <!-- ── ACTION BUTTONS ─────────────────── -->
+            <div class="mrt-card-actions">
+              <a
+                href="${affiliateUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mrt-btn-buy"
+                data-buy-btn>
+                <span class="mso" style="font-size:16px">shopping_cart</span>
+                Buy Now
+              </a>
+
+              <button
+                class="mrt-btn-qv"
+                data-qv-btn
+                data-id="${productId}">
+                <span class="mso" style="font-size:18px">zoom_in</span>
+              </button>
             </div>
           </div>
         </article>
       `;
     } catch (err) {
-      console.error("[MRT] Error creating product card:", err);
+      console.error('[MRT] createProductCard error:', err);
       return '';
     }
   }
@@ -767,9 +794,98 @@ class MRTApp {
     setTimeout(() => {
       ScrollTrigger.refresh();
     }, 1000);
+
+  injectCardStyles() {
+    if (document.getElementById('mrt-card-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'mrt-card-styles';
+    style.textContent = `
+      .mso { font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 0,'wght' 400; line-height:1; display:inline-block; vertical-align:middle; }
+      .mrt-product-card { display:flex; flex-direction:column; background:#fff; border-radius:20px; overflow:hidden; border:1px solid #f1f5f9; box-shadow:0 2px 16px 0 rgba(0,0,0,.06); transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s ease; cursor:pointer; position:relative; }
+      .mrt-product-card:hover { transform:translateY(-6px); box-shadow:0 20px 60px 0 rgba(0,0,0,.13); }
+      .mrt-card-carousel { flex-shrink:0; width:280px; }
+      @media(min-width:768px){ .mrt-card-carousel { width:340px; } }
+      .mrt-card-img-wrap { position:relative; width:100%; aspect-ratio:1/1; background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+      .mrt-card-img { width:72%; height:72%; object-fit:contain; transition:transform .6s cubic-bezier(.22,1,.36,1); filter:drop-shadow(0 8px 24px rgba(0,0,0,.12)); }
+      .mrt-product-card:hover .mrt-card-img { transform:scale(1.08) translateY(-4px); }
+      .mrt-badge-row { position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; z-index:10; pointer-events:none; }
+      .mrt-badge-pill { display:flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; background:linear-gradient(90deg,#f59e0b,#f97316); font-size:9px; font-weight:900; color:#fff; letter-spacing:.08em; text-transform:uppercase; box-shadow:0 2px 8px rgba(249,115,22,.4); }
+      .mrt-discount-pill { width:36px; height:36px; border-radius:50%; background:#ef4444; color:#fff; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:900; box-shadow:0 2px 8px rgba(239,68,68,.4); }
+      .mrt-img-overlay { position:absolute; inset:0; background:rgba(15,23,42,.5); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .3s ease; }
+      .mrt-product-card:hover .mrt-img-overlay { opacity:1; }
+      .mrt-qv-overlay-btn { display:flex; align-items:center; gap:8px; padding:10px 22px; border-radius:12px; background:#fff; color:#111; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,.3); transform:translateY(12px); transition:transform .35s cubic-bezier(.22,1,.36,1), background .2s; }
+      .mrt-product-card:hover .mrt-qv-overlay-btn { transform:translateY(0); }
+      .mrt-qv-overlay-btn:hover { background:var(--primary,#914d00); color:#fff; }
+      .mrt-card-body { padding:16px; display:flex; flex-direction:column; flex:1; }
+      .mrt-card-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+      .mrt-card-category { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.2em; color:var(--primary,#914d00); opacity:.6; }
+      .mrt-card-stars { display:flex; align-items:center; gap:2px; }
+      .mrt-review-count { font-size:10px; color:#9ca3af; margin-left:3px; }
+      .mrt-card-name { font-size:15px; font-weight:900; color:#111; line-height:1.35; margin-bottom:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; transition:color .2s; }
+      .mrt-product-card:hover .mrt-card-name { color:var(--primary,#914d00); }
+      .mrt-card-desc { font-size:11px; color:#9ca3af; line-height:1.6; margin-bottom:12px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; flex:1; }
+      .mrt-price-row { display:flex; align-items:baseline; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+      .mrt-price { font-size:24px; font-weight:900; color:#111; }
+      .mrt-old-price { font-size:12px; color:#d1d5db; text-decoration:line-through; }
+      .mrt-save-pill { margin-left:auto; font-size:9px; font-weight:900; color:#16a34a; background:#f0fdf4; padding:2px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.06em; }
+      .mrt-card-actions { display:flex; gap:8px; }
+      .mrt-btn-buy { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:11px 0; border-radius:12px; background:linear-gradient(90deg,#f59e0b,#f97316); color:#fff; font-size:10px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; text-decoration:none; box-shadow:0 4px 16px rgba(249,115,22,.35); transition:transform .25s ease,box-shadow .25s ease,filter .25s ease; border:none; cursor:pointer; }
+      .mrt-btn-buy:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(249,115,22,.45); filter:brightness(1.05); }
+      .mrt-btn-qv { display:flex; align-items:center; justify-content:center; width:44px; flex-shrink:0; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; transition:background .2s,color .2s,transform .25s ease,border-color .2s; }
+      .mrt-btn-qv:hover { background:#0f172a; color:#fff; border-color:#0f172a; transform:translateY(-2px); }
+      #mrt-qv-modal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; pointer-events:none; }
+      #mrt-qv-modal.is-open { pointer-events:all; }
+      .mrt-qv-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(12px); opacity:0; transition:opacity .4s ease; }
+      #mrt-qv-modal.is-open .mrt-qv-backdrop { opacity:1; }
+      .mrt-qv-panel { position:relative; z-index:1; width:100%; max-width:900px; background:#fff; border-radius:28px; display:flex; flex-direction:column; overflow:hidden; max-height:90vh; box-shadow:0 40px 120px rgba(0,0,0,.3); opacity:0; transform:scale(.92) translateY(24px); transition:opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1); }
+      @media(min-width:640px){ .mrt-qv-panel { flex-direction:row; } }
+      #mrt-qv-modal.is-open .mrt-qv-panel { opacity:1; transform:scale(1) translateY(0); }
+      .mrt-qv-img-col { width:100%; flex-shrink:0; background:linear-gradient(135deg,#f8fafc,#f1f5f9); display:flex; align-items:center; justify-content:center; padding:32px; min-height:240px; }
+      @media(min-width:640px){ .mrt-qv-img-col { width:42%; } }
+      .mrt-qv-img-col img { width:100%; height:100%; object-fit:contain; max-height:320px; filter:drop-shadow(0 12px 40px rgba(0,0,0,.15)); transition:transform .5s ease; }
+      .mrt-qv-img-col img:hover { transform:scale(1.05); }
+      .mrt-qv-content-col { flex:1; padding:28px 28px 28px 24px; overflow-y:auto; display:flex; flex-direction:column; }
+      .mrt-qv-close { position:absolute; top:16px; right:16px; z-index:10; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.9); backdrop-filter:blur(8px); border:1px solid #e2e8f0; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s,transform .2s; color:#111; }
+      .mrt-qv-close:hover { background:#0f172a; color:#fff; transform:rotate(90deg); }
+      @keyframes mrt-benefit-in { from { opacity:0; transform:translateX(-12px); } to { opacity:1; transform:translateX(0); } }
+      .mrt-benefit-item { animation: mrt-benefit-in .4s ease both; }
+    `;
+    document.head.appendChild(style);
   }
 
-  initSmoothScroll() {
+  bindEvents() {
+    document.querySelectorAll('.nav-prev, .nav-next').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const el = document.getElementById(btn.dataset.target);
+        if (el) el.scrollBy({ left: btn.classList.contains('nav-prev') ? -400 : 400, behavior: 'smooth' });
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-buy-btn]')) return;
+
+      const qvBtn = e.target.closest('[data-qv-btn]');
+      if (qvBtn) {
+        e.stopPropagation();
+        this.openQuickView(qvBtn.dataset.id);
+        return;
+      }
+
+      const reviewBtn = e.target.closest('[data-review-btn]');
+      if (reviewBtn) {
+        this.openReviewModal(reviewBtn.dataset.productId, reviewBtn.dataset.productName);
+        return;
+      }
+
+      // Clicking anywhere on the card body (not a button/link) opens Quick View
+      const card = e.target.closest('[data-premium-card]');
+      if (card) {
+        this.openQuickView(card.dataset.id);
+      }
+    });
+
+    // Smooth anchor scroll
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', (e) => {
         e.preventDefault();
@@ -777,182 +893,167 @@ class MRTApp {
         if (target) target.scrollIntoView({ behavior: 'smooth' });
       });
     });
-  }
 
-  bindEvents() {
-    document.querySelectorAll('.nav-prev, .nav-next').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const el = document.getElementById(btn.dataset.target);
-        if (el) el.scrollBy({ left: btn.classList.contains('nav-prev') ? -400 : 400, behavior: 'smooth' });
-      });
-    });
-
-    // Quick View & Review Modal Listeners
-    document.addEventListener('click', async (e) => {
-      const card = e.target.closest('[data-premium-card]');
-      const buyBtn = e.target.closest('.shimmer-btn'); // Link to Amazon
-      
-      // If clicking card but NOT direct buy button
-      if (card && !buyBtn) {
-        const productId = card.dataset.id;
-        this.openQuickView(productId);
-      }
-
-      const reviewBtn = e.target.closest('[data-review-btn]');
-      if (reviewBtn) {
-        this.openReviewModal(reviewBtn.dataset.productId, reviewBtn.dataset.productName);
-      }
-    });
+    // Expose globally for any legacy callers
+    window.closeQuickView = () => this.closeQuickView();
   }
 
   async openQuickView(productId) {
-    try {
-      let product = this.allProducts.find(p => String(p.id) === String(productId));
-      
-      // Fallback: If not in state, fetch manually (Surgical restoration)
-      if (!product) {
-        console.warn(`[MRT] Product ${productId} not found in state. Fetching...`);
-        try {
-          const res = await fetch(`/api/products/${productId}`);
-          if (res.ok) {
-            product = await res.json();
-            // Optional: push to state to avoid refetch
-            this.allProducts.push(product);
-          }
-        } catch (e) {
-          console.error("[MRT] Quick fetch failed:", e);
-        }
-      }
+    const product = this.allProducts.find(p => String(p.id) === String(productId));
+    if (!product) { console.warn('[MRT] openQuickView: product not found:', productId); return; }
 
-      if (!product) return;
+    // Ensure styles injected
+    this.injectCardStyles();
 
-      const modal = document.getElementById('quick-view-modal');
-      const img = document.getElementById('qv-image');
-      const title = document.getElementById('qv-title');
-      const desc = document.getElementById('qv-description');
-      const price = document.getElementById('qv-price');
-      const link = document.getElementById('qv-amazon-link');
-      const badge = document.getElementById('qv-badge');
-      const rating = document.getElementById('qv-rating');
-
-      if (!modal || !img || !title) return;
-
-      // Populate Modal Fields
-      img.src = product.image || '/assets/products/premium_product_placeholder.png';
-      img.alt = product.name;
-      title.textContent = product.name;
-      desc.textContent = product.shortBenefit || 'Premium selection from MRT International.';
-      price.textContent = `$${product.price ? product.price.toFixed(2) : '39.99'}`;
-      link.href = product.affiliateUrl || '#';
-      if (badge) badge.textContent = product.badge || 'Elite Pick';
-      if (rating) {
-        const ratingVal = parseFloat(product.ratingValue || 4.9).toFixed(1);
-        rating.innerHTML = `
-          <span class="material-symbols-outlined text-sm fill-primary">star</span>
-          <span class="text-xs font-bold">${ratingVal} / 5</span>
-        `;
-      }
-
-      // Show Modal
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      document.body.style.overflow = 'hidden';
-      
-    } catch (err) {
-      console.error('[MRT] Quick View Toggle Error:', err);
+    // Create or reuse modal shell
+    let modal = document.getElementById('mrt-qv-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'mrt-qv-modal';
+      document.body.appendChild(modal);
     }
-  }
 
-  closeQuickView() {
-    const modal = document.getElementById('quick-view-modal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-      document.body.style.overflow = 'auto';
-    }
-  }
-  async openReviewModal(productId, productName) {
-    // Create modal overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4';
-    overlay.innerHTML = `
-        <div class="bg-surface w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
-        <button class="absolute top-6 right-6 text-on-surface/40 hover:text-on-surface" id="close-modal">
-          <span class="material-symbols-outlined text-3xl">close</span>
+    const price    = product.price ? parseFloat(product.price).toFixed(2) : '39.99';
+    const oldPrice = (parseFloat(price) * 1.42).toFixed(2);
+    const rating   = (product.ratingValue || 4.8).toFixed(1);
+    const rawBenefits = product.keyBenefits
+      ? (Array.isArray(product.keyBenefits) ? product.keyBenefits : JSON.parse(product.keyBenefits))
+      : ['Superior Build', 'Premium Quality', 'Global Standards'];
+
+    const benefitDelay = (i) => `animation-delay:${i * 80}ms`;
+
+    modal.innerHTML = `
+      <div class="mrt-qv-backdrop" id="mrt-qv-backdrop"></div>
+      <div class="mrt-qv-panel">
+
+        <button class="mrt-qv-close" id="mrt-qv-close-btn">
+          <span class="mso" style="font-size:20px">close</span>
         </button>
-        
-        <div class="p-10 overflow-y-auto">
-          <h2 class="text-3xl font-headline italic mb-2">Reviews for <i>${productName}</i></h2>
-          <p class="text-on-surface-variant opacity-60 text-sm mb-8">Hear what our global community is saying.</p>
-          
-          <div id="reviews-list" class="space-y-6 mb-12">
-            <div class="py-10 text-center opacity-40 italic">Loading insights...</div>
+
+        <!-- Left: image -->
+        <div class="mrt-qv-img-col">
+          <img src="${product.image || '/assets/products/premium_product_placeholder.png'}"
+               alt="${product.name}"
+               onerror="this.src='/assets/products/premium_product_placeholder.png'">
+        </div>
+
+        <!-- Right: content -->
+        <div class="mrt-qv-content-col">
+
+          <!-- Badge + rating -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+            <span style="padding:4px 14px;border-radius:999px;background:rgba(145,77,0,.1);color:var(--primary,#914d00);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em">${product.badge || 'Premium'}</span>
+            <div style="display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:#111">
+              <span class="mso" style="font-size:16px;color:#f59e0b;font-variation-settings:'FILL' 1">star</span>
+              ${rating} <span style="color:#9ca3af;font-weight:400;font-size:12px;margin-left:2px">(${product.ratingCount || '500+'})</span>
+            </div>
           </div>
-          
-          <div class="border-t border-outline-variant/10 pt-10">
-            <h3 class="text-xl font-headline italic mb-6">Write a <i>Review</i></h3>
-            <form id="review-form" class="space-y-4">
-              <input type="hidden" name="productId" value="${productId}">
-              <div class="grid grid-cols-2 gap-4">
-                <input type="text" name="userName" placeholder="Your Name" required class="w-full bg-white/50 border border-outline-variant/20 rounded-2xl px-6 py-4 outline-none focus:border-primary">
-                <select name="rating" required class="w-full bg-white/50 border border-outline-variant/20 rounded-2xl px-6 py-4 outline-none focus:border-primary">
-                  <option value="5">Excellent (5 Stars)</option>
-                  <option value="4">Great (4 Stars)</option>
-                  <option value="3">Good (3 Stars)</option>
-                  <option value="2">Fair (2 Stars)</option>
-                  <option value="1">Poor (1 Star)</option>
-                </select>
-              </div>
-              <textarea name="comment" placeholder="Share your experience with this product..." required rows="4" class="w-full bg-white/50 border border-outline-variant/20 rounded-2xl px-6 py-4 outline-none focus:border-primary"></textarea>
-              <button type="submit" class="w-full bg-primary text-white py-5 rounded-2xl font-bold uppercase tracking-widest hover:scale-[1.02] transition-all">Submit Review</button>
-            </form>
+
+          <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;color:#0f172a;line-height:1.2;margin-bottom:8px">${product.name}</h2>
+          <p style="font-size:14px;color:#64748b;line-height:1.7;margin-bottom:20px">${product.description || product.shortBenefit || 'Experience the finest MRT International selection.'}</p>
+
+          <!-- Benefits -->
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px">
+            ${rawBenefits.map((b, i) => `
+              <div class="mrt-benefit-item" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:#f8fafc;border:1px solid #f1f5f9;${benefitDelay(i)}">
+                <span class="mso" style="font-size:18px;color:var(--primary,#914d00);font-variation-settings:'FILL' 1">check_circle</span>
+                <span style="font-size:12px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.06em">${b}</span>
+              </div>`).join('')}
+          </div>
+
+          <!-- Price + CTA -->
+          <div style="margin-top:auto;padding-top:16px;border-top:1px solid #f1f5f9">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
+              <span style="font-size:32px;font-weight:900;color:#0f172a">$${price}</span>
+              <span style="font-size:14px;color:#d1d5db;text-decoration:line-through">$${oldPrice}</span>
+              <span style="font-size:10px;font-weight:900;color:#16a34a;background:#f0fdf4;padding:2px 10px;border-radius:999px;margin-left:auto">Save 29%</span>
+            </div>
+            <a href="${product.affiliateUrl || '#'}" target="_blank" rel="noopener noreferrer"
+               style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px 0;border-radius:14px;background:linear-gradient(90deg,#f59e0b,#f97316);color:#fff;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;box-shadow:0 6px 24px rgba(249,115,22,.4);transition:transform .2s,box-shadow .2s"
+               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 10px 32px rgba(249,115,22,.5)'"
+               onmouseout="this.style.transform='';this.style.boxShadow='0 6px 24px rgba(249,115,22,.4)'">
+              <span class="mso" style="font-size:20px">shopping_cart</span>
+              Buy Now — Best Price
+            </a>
           </div>
         </div>
       </div>
-        `;
+    `;
 
-    document.body.appendChild(overlay);
+    // Wire close
+    document.getElementById('mrt-qv-backdrop').addEventListener('click', () => this.closeQuickView());
+    document.getElementById('mrt-qv-close-btn').addEventListener('click', () => this.closeQuickView());
+
+    // Open animation (two-frame trick)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        modal.classList.add('is-open');
+      });
+    });
+
+    // Prevent body scroll
     document.body.style.overflow = 'hidden';
+  }
 
-    const close = () => { overlay.remove(); document.body.style.overflow = 'auto'; };
-    overlay.querySelector('#close-modal').onclick = close;
-    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+  closeQuickView() {
+    const modal = document.getElementById('mrt-qv-modal');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    document.body.style.overflow = '';
+    // Remove from DOM after transition finishes
+    modal.addEventListener('transitionend', () => {
+      if (!modal.classList.contains('is-open')) modal.innerHTML = '';
+    }, { once: true });
+  }
 
-    // Fetch Reviews
-    try {
-      const res = await fetch(`/api/reviews/${productId}`);
-      const reviews = await res.json();
-      const listEl = overlay.querySelector('#reviews-list');
-      
-      if (reviews.length === 0) {
-        listEl.innerHTML = `<div class="py-10 text-center opacity-30 italic">No reviews yet. Be the first to share your thoughts!</div>`;
-      } else {
-        listEl.innerHTML = reviews.map(r => `
-        <div class="p-6 bg-white/40 rounded-3xl border border-white/60">
-            <div class="flex justify-between items-center mb-3">
-              <span class="font-bold text-primary">${r.userName}</span>
-              <div class="flex text-orange-500 scale-75 transform-gpu">
-                ${Array(parseInt(r.rating)).fill('<span class="material-symbols-outlined text-sm">star</span>').join('')}
-              </div>
+  openReviewModal(id, name) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-[110] flex items-center justify-center p-4';
+    modal.innerHTML = `
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-md" onclick="this.parentElement.remove()"></div>
+      <div class="relative w-full max-w-xl bg-white rounded-3xl p-10 shadow-2xl">
+        <h3 class="text-2xl font-bold mb-2">Review ${name}</h3>
+        <p class="text-gray-500 mb-8">Share your experience with the global community.</p>
+        <form class="space-y-6" onsubmit="event.preventDefault(); window.mrtApp.submitReview('${id}', this);">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Rating</label>
+            <div class="flex gap-2">
+              ${[1, 2, 3, 4, 5].map(i => `
+                <input type="radio" name="rating" value="${i}" id="r${i}" class="hidden peer" required>
+                <label for="r${i}" class="cursor-pointer text-gray-300 peer-checked:text-primary hover:text-primary transition-colors">
+                  <span class="material-symbols-outlined text-3xl">star</span>
+                </label>
+              `).join('')}
             </div>
-            <p class="text-on-surface-variant italic leading-relaxed">"${r.comment}"</p>
-            <p class="text-[10px] opacity-30 mt-3 uppercase tracking-widest">${new Date(r.createdAt).toLocaleDateString()}</p>
           </div>
-        `).join('');
-      }
-    } catch (err) {
-      console.error('Fetch reviews error:', err);
-    }
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Message</label>
+            <textarea class="w-full bg-gray-50 border border-gray-100 rounded-2xl p-5 focus:ring-2 ring-primary outline-none transition-all" rows="4" placeholder="Your thoughts..." required></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <input type="text" placeholder="Name" class="bg-gray-50 border border-gray-100 rounded-2xl p-5" required>
+            <input type="text" placeholder="Location (e.g. Dubai, UAE)" class="bg-gray-50 border border-gray-100 rounded-2xl p-5" required>
+          </div>
+          <button class="w-full py-5 bg-primary text-white rounded-2xl font-bold tracking-widest uppercase hover:opacity-90 transition-all">Submit Global Review</button>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
 
-    // Submit Review
-    const form = overlay.querySelector('#review-form');
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
+  async submitReview(productId, form) {
+      const data = {
+        productId,
+        rating: form.querySelector('input[name="rating"]:checked').value,
+        text: form.querySelector('textarea').value,
+        name: form.querySelector('input[placeholder="Name"]').value,
+        location: form.querySelector('input[placeholder^="Location"]').value
+      };
+      
+      const close = () => form.closest('.fixed').remove();
       
       try {
-        const res = await fetch('/api/reviews', {
+        const res = await fetch('/api/testimonials', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -968,7 +1069,6 @@ class MRTApp {
       } catch (err) {
         alert('Network error. Please check your connection.');
       }
-    };
   }
 
 }

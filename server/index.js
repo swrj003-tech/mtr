@@ -178,7 +178,11 @@ app.get('/health', (req, res) => {
 });
 
 // Final: Unified Static Serving for Restoration & Delivery
-app.use('/admin', express.static(path.join(__dirname, '../dist/admin')));
+const adminPath = existsSync(path.join(__dirname, '../dist/admin')) 
+  ? path.join(__dirname, '../dist/admin') 
+  : path.join(__dirname, '../admin');
+
+app.use('/admin', express.static(adminPath));
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // Admin specific redirect to handle /admin without trailing slash
