@@ -795,63 +795,7 @@ class MRTApp {
     }, 1000);
   }
 
-  injectCardStyles() {
-    if (document.getElementById('mrt-card-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'mrt-card-styles';
-    style.textContent = `
-      .mso { font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 0,'wght' 400; line-height:1; display:inline-block; vertical-align:middle; }
-      .mrt-product-card { display:flex; flex-direction:column; background:#fff; border-radius:20px; overflow:hidden; border:1px solid #f1f5f9; box-shadow:0 2px 16px 0 rgba(0,0,0,.06); transition:transform .35s cubic-bezier(.22,1,.36,1),box-shadow .35s ease; cursor:pointer; position:relative; }
-      .mrt-product-card:hover { transform:translateY(-6px); box-shadow:0 20px 60px 0 rgba(0,0,0,.13); }
-      .mrt-card-carousel { flex-shrink:0; width:280px; }
-      @media(min-width:768px){ .mrt-card-carousel { width:340px; } }
-      .mrt-card-img-wrap { position:relative; width:100%; aspect-ratio:1/1; background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%); display:flex; align-items:center; justify-content:center; overflow:hidden; }
-      .mrt-card-img { width:72%; height:72%; object-fit:contain; transition:transform .6s cubic-bezier(.22,1,.36,1); filter:drop-shadow(0 8px 24px rgba(0,0,0,.12)); }
-      .mrt-product-card:hover .mrt-card-img { transform:scale(1.08) translateY(-4px); }
-      .mrt-badge-row { position:absolute; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; z-index:10; pointer-events:none; }
-      .mrt-badge-pill { display:flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; background:linear-gradient(90deg,#f59e0b,#f97316); font-size:9px; font-weight:900; color:#fff; letter-spacing:.08em; text-transform:uppercase; box-shadow:0 2px 8px rgba(249,115,22,.4); }
-      .mrt-discount-pill { width:36px; height:36px; border-radius:50%; background:#ef4444; color:#fff; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:900; box-shadow:0 2px 8px rgba(239,68,68,.4); }
-      .mrt-img-overlay { position:absolute; inset:0; background:rgba(15,23,42,.5); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .3s ease; }
-      .mrt-product-card:hover .mrt-img-overlay { opacity:1; }
-      .mrt-qv-overlay-btn { display:flex; align-items:center; gap:8px; padding:10px 22px; border-radius:12px; background:#fff; color:#111; font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; border:none; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,.3); transform:translateY(12px); transition:transform .35s cubic-bezier(.22,1,.36,1), background .2s; }
-      .mrt-product-card:hover .mrt-qv-overlay-btn { transform:translateY(0); }
-      .mrt-qv-overlay-btn:hover { background:var(--primary,#914d00); color:#fff; }
-      .mrt-card-body { padding:16px; display:flex; flex-direction:column; flex:1; }
-      .mrt-card-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-      .mrt-card-category { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.2em; color:var(--primary,#914d00); opacity:.6; }
-      .mrt-card-stars { display:flex; align-items:center; gap:2px; }
-      .mrt-review-count { font-size:10px; color:#9ca3af; margin-left:3px; }
-      .mrt-card-name { font-size:15px; font-weight:900; color:#111; line-height:1.35; margin-bottom:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; transition:color .2s; }
-      .mrt-product-card:hover .mrt-card-name { color:var(--primary,#914d00); }
-      .mrt-card-desc { font-size:11px; color:#9ca3af; line-height:1.6; margin-bottom:12px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; flex:1; }
-      .mrt-price-row { display:flex; align-items:baseline; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
-      .mrt-price { font-size:24px; font-weight:900; color:#111; }
-      .mrt-old-price { font-size:12px; color:#d1d5db; text-decoration:line-through; }
-      .mrt-save-pill { margin-left:auto; font-size:9px; font-weight:900; color:#16a34a; background:#f0fdf4; padding:2px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.06em; }
-      .mrt-card-actions { display:flex; gap:8px; }
-      .mrt-btn-buy { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:11px 0; border-radius:12px; background:linear-gradient(90deg,#f59e0b,#f97316); color:#fff; font-size:10px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; text-decoration:none; box-shadow:0 4px 16px rgba(249,115,22,.35); transition:transform .25s ease,box-shadow .25s ease,filter .25s ease; border:none; cursor:pointer; }
-      .mrt-btn-buy:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(249,115,22,.45); filter:brightness(1.05); }
-      .mrt-btn-qv { display:flex; align-items:center; justify-content:center; width:44px; flex-shrink:0; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; transition:background .2s,color .2s,transform .25s ease,border-color .2s; }
-      .mrt-btn-qv:hover { background:#0f172a; color:#fff; border-color:#0f172a; transform:translateY(-2px); }
-      #mrt-qv-modal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; pointer-events:none; }
-      #mrt-qv-modal.is-open { pointer-events:all; }
-      .mrt-qv-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(12px); opacity:0; transition:opacity .4s ease; }
-      #mrt-qv-modal.is-open .mrt-qv-backdrop { opacity:1; }
-      .mrt-qv-panel { position:relative; z-index:1; width:100%; max-width:900px; background:#fff; border-radius:28px; display:flex; flex-direction:column; overflow:hidden; max-height:90vh; box-shadow:0 40px 120px rgba(0,0,0,.3); opacity:0; transform:scale(.92) translateY(24px); transition:opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1); }
-      @media(min-width:640px){ .mrt-qv-panel { flex-direction:row; } }
-      #mrt-qv-modal.is-open .mrt-qv-panel { opacity:1; transform:scale(1) translateY(0); }
-      .mrt-qv-img-col { width:100%; flex-shrink:0; background:linear-gradient(135deg,#f8fafc,#f1f5f9); display:flex; align-items:center; justify-content:center; padding:32px; min-height:240px; }
-      @media(min-width:640px){ .mrt-qv-img-col { width:42%; } }
-      .mrt-qv-img-col img { width:100%; height:100%; object-fit:contain; max-height:320px; filter:drop-shadow(0 12px 40px rgba(0,0,0,.15)); transition:transform .5s ease; }
-      .mrt-qv-img-col img:hover { transform:scale(1.05); }
-      .mrt-qv-content-col { flex:1; padding:28px 28px 28px 24px; overflow-y:auto; display:flex; flex-direction:column; }
-      .mrt-qv-close { position:absolute; top:16px; right:16px; z-index:10; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.9); backdrop-filter:blur(8px); border:1px solid #e2e8f0; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s,transform .2s; color:#111; }
-      .mrt-qv-close:hover { background:#0f172a; color:#fff; transform:rotate(90deg); }
-      @keyframes mrt-benefit-in { from { opacity:0; transform:translateX(-12px); } to { opacity:1; transform:translateX(0); } }
-      .mrt-benefit-item { animation: mrt-benefit-in .4s ease both; }
-    `;
-    document.head.appendChild(style);
-  }
+  // Premium Styles are now in style.css
 
   bindEvents() {
     document.querySelectorAll('.nav-prev, .nav-next').forEach(btn => {
