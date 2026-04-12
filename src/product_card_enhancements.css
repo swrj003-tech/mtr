@@ -13,7 +13,24 @@
 
 /* === ULTRA SMOOTH SCROLL === */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
 
 * {
@@ -23,7 +40,7 @@ html {
 /* Force GPU-composited scrolling on all scrollable containers */
 body {
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
 }
 
 /* Smooth content paint */

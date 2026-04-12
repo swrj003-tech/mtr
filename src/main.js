@@ -51,6 +51,13 @@ class MRTApp {
     document.body.classList.add('loaded');
     document.body.style.opacity = '1';
 
+    this.lenis = null;
+    this.lenisDriverInitialized = false;
+    this.lenisRafId = null;
+    this.lenisTicker = null;
+    this.quickViewCleanupPending = false;
+    this.previousBodyOverflow = '';
+
     // 2. Library Guards
     if (typeof Lenis !== 'undefined') {
       this.lenis = new Lenis({
@@ -62,15 +69,13 @@ class MRTApp {
         infinite: false,
       });
 
-      // Hook Lenis into GSAP ticker if available for perfect sync
-      if (typeof gsap !== 'undefined') {
-        gsap.ticker.add((time) => { this.lenis?.raf(time * 1000); });
-        gsap.ticker.lagSmoothing(0);
-      } else {
-        // Fallback manual RAF loop
-        const raf = (time) => { this.lenis?.raf(time); requestAnimationFrame(raf); };
-        requestAnimationFrame(raf);
-      }
+      this.lenis.on('scroll', () => {
+        if (typeof ScrollTrigger !== 'undefined') {
+          ScrollTrigger.update();
+        }
+      });
+
+      this.initLenis();
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -98,7 +103,6 @@ class MRTApp {
   async init() {
     try {
       this.initHeaderScroll();
-      if (this.lenis) this.initLenis();
 
       // Add "Shop Now" scroll listener - Made robust to avoid invalid selector errors
       const allButtons = Array.from(document.querySelectorAll('button'));
@@ -111,9 +115,7 @@ class MRTApp {
         shopBtn.addEventListener('click', (e) => {
           e.preventDefault();
           const target = document.getElementById('categories') || document.querySelector('.peek-container') || document.getElementById('category-carousels-container');
-          if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
+          this.scrollToTarget(target);
         });
       }
 
@@ -494,7 +496,7 @@ class MRTApp {
 
 
   initCardInteractions(targetId = null) {
-    const selector = targetId ? `#${targetId} [data-premium-card]` : '[data-premium-card]';
+    const selector = targetId ? `#${targetId} [data-enhanced-card]` : '[data-enhanced-card]';
     const cards = document.querySelectorAll(selector);
     
     cards.forEach(card => {
@@ -569,8 +571,58 @@ class MRTApp {
   }
 
   initLenis() {
-    const raf = (t) => { this.lenis.raf(t); requestAnimationFrame(raf); };
-    requestAnimationFrame(raf);
+    if (!this.lenis || this.lenisDriverInitialized) return;
+
+    this.lenisDriverInitialized = true;
+
+    if (typeof gsap !== 'undefined') {
+      this.lenisTicker = (time) => {
+        this.lenis?.raf(time * 1000);
+      };
+      gsap.ticker.add(this.lenisTicker);
+      gsap.ticker.lagSmoothing(0);
+      return;
+    }
+
+    const raf = (time) => {
+      if (!this.lenis) return;
+      this.lenis.raf(time);
+      this.lenisRafId = requestAnimationFrame(raf);
+    };
+
+    this.lenisRafId = requestAnimationFrame(raf);
+  }
+
+  scrollToTarget(target) {
+    if (!target) return;
+
+    if (this.lenis) {
+      this.lenis.scrollTo(target, {
+        duration: 1.1,
+      });
+      return;
+    }
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  getProductBenefits(product) {
+    if (Array.isArray(product.keyBenefits) && product.keyBenefits.length > 0) {
+      return product.keyBenefits;
+    }
+
+    if (typeof product.keyBenefits === 'string' && product.keyBenefits.trim()) {
+      try {
+        const parsed = JSON.parse(product.keyBenefits);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (err) {
+        console.warn('[MRT] Failed to parse keyBenefits for Quick View:', product.id, err);
+      }
+    }
+
+    return ['Superior Build', 'Premium Quality', 'Global Standards'];
   }
 
   initScrollReveal() {
@@ -826,8 +878,6 @@ class MRTApp {
     });
 
     document.addEventListener('click', (e) => {
-      if (e.target.closest('[data-buy-btn]')) return;
-
       const qvBtn = e.target.closest('[data-qv-btn]');
       if (qvBtn) {
         e.stopPropagation();
@@ -841,8 +891,10 @@ class MRTApp {
         return;
       }
 
+      if (e.target.closest('a, button, input, textarea, select, label')) return;
+
       // Clicking anywhere on the card body (not a button/link) opens Quick View
-      const card = e.target.closest('[data-premium-card]');
+      const card = e.target.closest('[data-enhanced-card]');
       if (card) {
         this.openQuickView(card.dataset.id);
       }
@@ -851,9 +903,11 @@ class MRTApp {
     // Smooth anchor scroll
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', (e) => {
+        const href = anchor.getAttribute('href');
+        if (!href || href === '#') return;
         e.preventDefault();
-        const target = document.querySelector(anchor.getAttribute('href'));
-        if (target) target.scrollIntoView({ behavior: 'smooth' });
+        const target = document.querySelector(href);
+        this.scrollToTarget(target);
       });
     });
 
@@ -864,9 +918,6 @@ class MRTApp {
   async openQuickView(productId) {
     const product = this.allProducts.find(p => String(p.id) === String(productId));
     if (!product) { console.warn('[MRT] openQuickView: product not found:', productId); return; }
-
-    // Ensure styles injected
-    this.injectCardStyles();
 
     // Create or reuse modal shell
     let modal = document.getElementById('mrt-qv-modal');
@@ -879,11 +930,13 @@ class MRTApp {
     const price    = product.price ? parseFloat(product.price).toFixed(2) : '39.99';
     const oldPrice = (parseFloat(price) * 1.42).toFixed(2);
     const rating   = (product.ratingValue || 4.8).toFixed(1);
-    const rawBenefits = product.keyBenefits
-      ? (Array.isArray(product.keyBenefits) ? product.keyBenefits : JSON.parse(product.keyBenefits))
-      : ['Superior Build', 'Premium Quality', 'Global Standards'];
+    const rawBenefits = this.getProductBenefits(product);
 
     const benefitDelay = (i) => `animation-delay:${i * 80}ms`;
+
+    const modalWasOpen = modal.classList.contains('is-open');
+    modal.classList.remove('is-open');
+    this.quickViewCleanupPending = false;
 
     modal.innerHTML = `
       <div class="mrt-qv-backdrop" id="mrt-qv-backdrop"></div>
@@ -947,6 +1000,13 @@ class MRTApp {
     document.getElementById('mrt-qv-backdrop').addEventListener('click', () => this.closeQuickView());
     document.getElementById('mrt-qv-close-btn').addEventListener('click', () => this.closeQuickView());
 
+    if (!modal.dataset.escapeBound) {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') this.closeQuickView();
+      });
+      modal.dataset.escapeBound = 'true';
+    }
+
     // Open animation (two-frame trick)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -955,18 +1015,37 @@ class MRTApp {
     });
 
     // Prevent body scroll
+    if (!modalWasOpen) {
+      this.previousBodyOverflow = document.body.style.overflow;
+    }
     document.body.style.overflow = 'hidden';
   }
 
   closeQuickView() {
     const modal = document.getElementById('mrt-qv-modal');
     if (!modal) return;
+
+    if (!modal.innerHTML.trim()) {
+      document.body.style.overflow = this.previousBodyOverflow;
+      return;
+    }
+
+    if (this.quickViewCleanupPending) return;
+
+    this.quickViewCleanupPending = true;
     modal.classList.remove('is-open');
-    document.body.style.overflow = '';
-    // Remove from DOM after transition finishes
-    modal.addEventListener('transitionend', () => {
-      if (!modal.classList.contains('is-open')) modal.innerHTML = '';
-    }, { once: true });
+    document.body.style.overflow = this.previousBodyOverflow;
+
+    const cleanup = () => {
+      if (!modal.classList.contains('is-open')) {
+        modal.innerHTML = '';
+      }
+      this.quickViewCleanupPending = false;
+    };
+
+    // Remove from DOM after transition finishes, with a timeout fallback.
+    modal.addEventListener('transitionend', cleanup, { once: true });
+    setTimeout(cleanup, 500);
   }
 
   openReviewModal(id, name) {
