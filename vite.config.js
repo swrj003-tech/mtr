@@ -30,4 +30,20 @@ export default defineConfig({
       },
     },
   },
+  plugins: [
+    {
+      name: 'admin-redirect',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url === '/admin') {
+            res.writeHead(301, { Location: '/admin/' });
+            res.end();
+          } else {
+            next();
+          }
+        });
+      }
+    }
+  ]
 });
+

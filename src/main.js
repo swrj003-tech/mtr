@@ -181,21 +181,17 @@ class MRTApp {
     if (!container) return;
 
     try {
-      // Surgical cache bust on core JSON data fetching only
-      const [productsRes, catsRes] = await Promise.all([
-        fetch(`/api/products?_t=${Date.now()}`),
-        fetch(`/api/categories?_t=${Date.now()}`)
-      ]);
+      // Use category-specific endpoint for 100% reliability
+      const res = await fetch(`/api/categories/${this.currentCategory}?_t=${Date.now()}`);
+      if (!res.ok) throw new Error('Category or products not found');
 
-      if (!productsRes.ok || !catsRes.ok) throw new Error('API error');
-
-      const productsData = await productsRes.json();
-      const products = Array.isArray(productsData) ? productsData : (productsData.products || []);
-      const categories = await catsRes.json();
+      const data = await res.json();
+      const products = data.products || [];
+      const theme = data.theme;
 
       this.allProducts = products;
-      const themeData = categories.find(c => c.theme && c.slug === this.currentCategory);
-      const theme = themeData ? themeData.theme : null;
+      this.currentId = data.id;
+      this.currentCategoryImage = data.image;
 
       if (theme) {
         this.applyTheme(theme);
@@ -206,14 +202,18 @@ class MRTApp {
 
         if (titleEl) {
           titleEl.innerText = theme.seoTitle || `Top 10 Best ${theme.title} Products (2026)`;
-          titleEl.classList.add('text-gray-900', 'font-black'); // Force Contrast
+          titleEl.classList.add('text-gray-900', 'font-black'); 
         }
         if (introEl) {
           introEl.innerText = theme.seoIntro || `Discover the most useful, trending, and top-rated ${theme.title.toLowerCase()} products carefully selected for quality and value.`;
-          introEl.classList.add('text-gray-800', 'font-medium'); // Force Contrast
+          introEl.classList.add('text-gray-800', 'font-medium');
         }
 
-        this.renderBoutiqueProducts(this.allProducts, this.currentCategory, container);
+        // Pass the category name from data if missing in product objects
+        const categoryData = { name: data.name, slug: data.slug, theme: data.theme };
+        const enrichedProducts = products.map(p => ({ ...p, category: p.category || categoryData }));
+
+        this.renderBoutiqueProducts(enrichedProducts, this.currentCategory, container);
       } else {
         container.innerHTML = `<p class="col-span-full text-center serif italic opacity-50 py-20 animate-pulse text-on-surface">Synchronizing Collection for "${this.currentCategory}"...</p>`;
       }
@@ -289,9 +289,10 @@ class MRTApp {
       if (!image || image.includes('placeholder')) {
         const cleanName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         const mapping = {
-          'vegetable-chopper': 'vegetable_chopper.png',
+          'vegetable-chopper': 'vegetable-chopper.png',
           'electric-spin-scrubber': 'electric_spin_scrubber.png',
-          'pet-hair-remover-roller': 'pet-hair-remover.png',
+          'pet-hair-remover-roller': 'pet-hair-remover-roller.png',
+          'self-cleaning-grooming-brush': 'self-cleaning-grooming-brush.png',
           'baby-nail-trimmer': 'baby-clipper-premium.png'
         };
         image = `/assets/products/${mapping[cleanName] || cleanName + '.png'}`;
@@ -405,11 +406,8 @@ class MRTApp {
 
   renderBoutiqueProducts(products, categorySlug, container) {
     try {
-      const list = products.filter(p => {
-         const matchByCatId = String(p.categoryId) === String(this.currentId);
-         const matchBySlug = (p.category && (p.category.slug === categorySlug || p.category === categorySlug));
-         return matchByCatId || matchBySlug;
-      });
+      // list is already filtered by API
+      const list = products;
 
       if (list.length === 0) {
         container.innerHTML = `<p class="col-span-full text-center serif italic opacity-40 py-20">No products found in this collection.</p>`;
@@ -424,7 +422,7 @@ class MRTApp {
       const heroHtml = `
         <div class="relative w-full py-24 md:py-32 mb-16 overflow-hidden rounded-[3rem] bg-gray-900 text-white">
           <div class="absolute inset-0 opacity-40">
-            <img src="/assets/categories/${categorySlug}.png" class="w-full h-full object-cover blur-sm" onerror="this.src='/assets/hero-bg.jpg'">
+            <img src="${this.currentCategoryImage || '/assets/mrt-hero.png'}" class="w-full h-full object-cover blur-sm" onerror="this.src='/assets/mrt-hero.png'">
           </div>
           <div class="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent"></div>
           <div class="relative z-10 px-8 md:px-16 max-w-4xl">

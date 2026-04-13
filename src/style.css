@@ -229,3 +229,110 @@
     gap: 4px;
   }
 }
+
+/* ==========================================================
+   AVORY-STYLE MOBILE APP OVERRIDES (DESKTOP IS UNTOUCHED)
+   ========================================================== */
+
+@media (max-width: 767px) {
+  /* Add padding so footer content isn't hidden behind the bottom nav */
+  body { padding-bottom: 80px !important; }
+  
+  /* Hide the old hamburger menu button since we have the bottom nav */
+  #mobile-menu-btn { display: none !important; }
+  
+  /* Ensure Bottom Nav is visible on mobile only */
+  .mrt-app-bottom-nav { display: block !important; }
+  
+  /* Support for iPhone safe area at the bottom */
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+@media (min-width: 768px) {
+  .mrt-app-bottom-nav { display: none !important; }
+}
+
+/* --- 1. QUICK VIEW BOTTOM SHEET --- */
+@media (max-width: 639px) {
+  #mrt-qv-modal {
+    align-items: flex-end !important; 
+    padding: 0 !important; 
+  }
+  
+  .mrt-qv-panel { 
+    max-height: 88vh !important; 
+    width: 100% !important; 
+    margin: 0 !important; 
+    border-radius: 32px 32px 0 0 !important; 
+    transform: translateY(100%) !important; 
+    opacity: 1 !important;
+    transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1) !important;
+  }
+
+  #mrt-qv-modal.is-open .mrt-qv-panel {
+    transform: translateY(0) !important; 
+  }
+  
+  .mrt-qv-img-col { 
+    min-height: 260px !important; 
+    padding: 24px !important; 
+    background: transparent !important;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .mrt-qv-content-col { 
+    padding: 24px 20px 120px 20px !important; /* Huge bottom padding for sticky button */
+  }
+
+  /* Sticky 'Buy Now' button hovering at the bottom */
+  .mrt-qv-content-col > div:last-child {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    padding: 16px 24px env(safe-area-inset-bottom) 24px !important;
+    border-top: 1px solid #e2e8f0 !important;
+    z-index: 50 !important;
+    margin-top: 0 !important;
+  }
+}
+
+/* --- 2. SOCIAL FEED PRODUCT CARDS --- */
+@media (max-width: 639px) {
+  .mrt-product-card {
+    border: none !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    border-radius: 0 !important;
+    padding-bottom: 24px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .mrt-card-img-wrap {
+    border-radius: 20px !important; 
+  }
+  
+  /* Force grid to 1 column feed if it's the category grid */
+  #category-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+}
+
+/* --- 3. STICKY CATEGORY FILTERS --- */
+@media (max-width: 639px) {
+  /* Target the flex container holding the filter pills */
+  div.mb-12 > div.flex.flex-wrap.items-center.gap-3.mb-10 {
+    position: sticky;
+    top: 60px; /* Just below header */
+    z-index: 40;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    padding: 16px 24px 12px 24px;
+    margin-left: -32px;
+    margin-right: -32px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+}

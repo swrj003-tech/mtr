@@ -383,5 +383,27 @@
             <p class="text-on-surface-variant font-body text-xs tracking-[0.4em] uppercase opacity-40">© 2024 MRT International Holding LLC. All Rights Reserved.</p>
         </div>
     </footer>
+    <!-- App Bottom Navigation (Mobile Only) -->
+    <nav class="mrt-app-bottom-nav fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-xl border-t border-gray-200 z-[90] pb-safe">
+        <div class="flex justify-between items-center px-6 py-3">
+            <a href="index.html" class="flex flex-col items-center text-primary group">
+                <span class="material-symbols-outlined text-2xl">home</span>
+                <span class="text-[10px] font-bold mt-1">Home</span>
+            </a>
+            <a href="categories.html" class="flex flex-col items-center text-gray-400 hover:text-primary group">
+                <span class="material-symbols-outlined text-2xl">grid_view</span>
+                <span class="text-[10px] font-bold mt-1">Shop</span>
+            </a>
+            <a href="#" class="flex flex-col items-center text-gray-400 hover:text-primary group relative" id="mobile-cart-btn">
+                <span class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">0</span>
+                <span class="material-symbols-outlined text-2xl">shopping_bag</span>
+                <span class="text-[10px] font-bold mt-1">Cart</span>
+            </a>
+            <a href="contact.html" class="flex flex-col items-center text-gray-400 hover:text-primary group">
+                <span class="material-symbols-outlined text-2xl">person</span>
+                <span class="text-[10px] font-bold mt-1">Profile</span>
+            </a>
+        </div>
+    </nav>
 </body>
 </html>

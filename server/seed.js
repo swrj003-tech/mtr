@@ -35,7 +35,7 @@ async function main() {
   const catMap = {};
   for (const cat of categories) {
     const created = await prisma.category.create({ data: cat });
-    catMap[cat.name] = created.id;
+    catMap[cat.name.trim()] = created.id;
   }
 
   // 2. Themes (SEO Titles & Intros)
@@ -55,12 +55,85 @@ async function main() {
         primary: '#914d00', secondary: '#f28c28',
         title: t.title, subtitle: 'Elite Selection',
         seoTitle: t.seoTitle, seoIntro: t.seoIntro,
-        categoryId: catMap[t.name]
+        categoryId: catMap[t.name.trim()]
       }
     });
   }
 
-  // 3. Products
+  // 3. Image Mapping (Explicit)
+  const imageMap = {
+    "Hair Straightener Brush": "hair-straightener-brush.png",
+    "LED Makeup Mirror": "led-makeup-mirror.png",
+    "Heatless Hair Curlers": "heatless-curlers.png",
+    "Blackhead Remover Vacuum": "blackhead-remover.png",
+    "Electric Eyebrow Trimmer": "eyebrow-trimmer.png",
+    "Makeup Brush Set": "makeup-brush-set.png",
+    "Cosmetic Organizer": "cosmetic-organizer.png",
+    "Memory Foam Pillow": "memory-foam-pillow.png",
+    "Foam Roller": "foam-roller.png",
+    "Weighted Blanket": "weighted-blanket.png",
+    "Eye Massager": "eye-massager.png",
+    "White Noise Machine": "white-noise-machine.png",
+    "Lumbar Support Cushion": "lumbar-support-cushion.png",
+    "Pet Hair Remover Roller": "pet-hair-remover-roller.png",
+    "Self-Cleaning Grooming Brush": "self-cleaning-grooming-brush.png",
+    "Pet Water Fountain": "pet-water-fountain.png",
+    "Interactive Dog Toy": "interactive-dog-toy.png",
+    "Cat Laser Toy": "cat-laser-toy.png",
+    "Portable Pet Water Bottle": "portable-pet-water-bottle.png",
+    "Slow Feeder Bowl": "slow-feeder-bowl.png",
+    "Pet Nail Clipper": "pet-nail-clipper.png",
+    "Pet Bed": "pet-bed.png",
+    "Silicone Feeding Set": "silicone-feeding-set.png",
+    "Baby Diaper Bag": "baby-diaper-bag.png",
+    "Portable Changing Mat": "portable-changing-mat.png",
+    "Cabinet Safety Locks": "cabinet-safety-locks.png",
+    "Baby Bottle Warmer": "baby-bottle-warmer.png",
+    "Stroller Organizer": "stroller-organizer.png",
+    "Baby Toy Set": "baby-toy-set.png",
+    "Baby Grooming Kit": "baby-grooming-kit.png",
+    "Power Bank": "power-bank.png",
+    "Bluetooth Speaker": "bluetooth-speaker.png",
+    "Smart LED Strip Lights": "smart-led-strip-lights.png",
+    "Mini Projector": "mini-projector.png",
+    "Laptop Stand": "laptop-stand.png",
+    "Phone Stand": "magnetic-phone-mount.png",
+    "Adjustable Dumbbells": "adjustable-dumbbells.png",
+    "Ab Roller": "ab-roller.png",
+    "Push-Up Board": "push-up-board.png",
+    "Gym Gloves": "gym-gloves.png",
+    "Water Bottle": "insulated-water-bottle.png",
+    "Vegetable Chopper": "vegetable-chopper.png",
+    "Electric Spin Scrubber": "electric_spin_scrubber.png",
+    "Vacuum Storage Bags": "vacuum-bags.png",
+    "Air Fryer Accessories Set": "air-fryer-accessories.png",
+    "Oil Spray Bottle": "oil-spray-bottle.png",
+    "Smart Plug": "smart-plug.png",
+    "LED Motion Sensor Lights": "motion-lights.png",
+    "Microfiber Cleaning Cloth Pack": "microfiber-cloths.png",
+    "Digital Kitchen Scale": "digital-scale.png",
+    "Under Sink Organizer": "under-sink-organizer.png",
+    "Ice Face Roller": "ice_face_roller.png",
+    "Facial Cleansing Brush": "sonic-facial-cleansing-brush.jpg",
+    "Electric Toothbrush": "electric-toothbrush.png",
+    "Neck & Shoulder Massager": "neck-massager.png",
+    "Posture Corrector": "posture-corrector.png",
+    "Massage Gun": "massage-gun.png",
+    "Aromatherapy Diffuser": "aromatherapy-diffuser-luxury.jpg",
+    "Automatic Pet Feeder": "pet-feeder.png",
+    "Baby Nail Trimmer": "baby-clipper-premium.png",
+    "Baby Bath Support": "baby-bath-support.png",
+    "Wireless Earbuds": "wireless_earbuds.png",
+    "Fast Wireless Charger": "3-in-1-charging-station.png",
+    "Car Phone Mount": "magnetic-phone-mount.png",
+    "Charging Hub": "carbon-fiber-charging-hub.jpg",
+    "Resistance Bands": "resistance_bands.png",
+    "Yoga Mat": "yoga-mat.png",
+    "Jump Rope": "weighted-jump-rope.png"
+  };
+
+  // 4. Products
+
   const productData = [
     // Home & Kitchen
     { cat: 'Home & Kitchen', badge: 'Top Picks', name: 'Vegetable Chopper', url: 'https://amzn.to/4mgjKOK', desc: 'Saves time in meal preparation and easy to use.', benefits: ['Time Saver', 'Multi-Blade', 'Dishwasher Safe'] },
@@ -151,6 +224,9 @@ async function main() {
     const p = productData[i];
     const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     
+    const imageFileName = imageMap[p.name] || 'premium_product_placeholder.png';
+    const imagePath = `/assets/products/${imageFileName}`;
+
     await prisma.product.create({
       data: {
         name: p.name,
@@ -158,16 +234,17 @@ async function main() {
         description: p.desc,
         shortBenefit: p.desc,
         price: 39.99 + (i % 5 * 10),
-        image: `/assets/products/premium_product_placeholder.png`,
+        image: imagePath,
         badge: p.badge,
         affiliateUrl: p.url,
         isActive: true,
         sortOrder: i,
         ratingValue: 4.8 + (Math.random() * 0.2),
-        categoryId: catMap[p.cat],
+        categoryId: catMap[p.cat.trim()],
         keyBenefits: JSON.stringify(p.benefits)
       }
     });
+
   }
 
   // 4. Testimonials
