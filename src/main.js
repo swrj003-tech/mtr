@@ -58,8 +58,8 @@ class MRTApp {
     this.quickViewCleanupPending = false;
     this.previousBodyOverflow = '';
 
-    // 2. Library Guards
-    if (typeof Lenis !== 'undefined') {
+    // 2. Library Guards - RESTRICT SMOOTH SCROLL TO DESKTOP FOR NATIVE MOBILE FEEL
+    if (typeof Lenis !== 'undefined' && window.innerWidth > 768) {
       this.lenis = new Lenis({
         duration: 1.4,
         easing: (t) => 1 - Math.pow(1 - t, 4),   // quartic ease-out — ultra smooth
@@ -690,29 +690,48 @@ class MRTApp {
 
   renderCategoriesGrid(categories) {
     try {
+      // 1. Check for legacy grid first (Desktop)
       const grid = document.getElementById('categories-grid');
-      if (!grid) return;
-      
-      grid.innerHTML = categories.map((c, index) => {
-          const isSeventh = index === 6 || (index > 0 && index === categories.length - 1 && categories.length > 5);
-          const bgCol = isSeventh ? 'from-black/90 via-black/40' : 'from-black/80 via-black/20';
-          
+      // 2. Check for new Avory bubbles (Mobile)
+      const bubbleContainer = document.getElementById('avory-categories');
+
+      if (grid) {
+        grid.innerHTML = categories.map((c, index) => {
+            const isSeventh = index === 6 || (index > 0 && index === categories.length - 1 && categories.length > 5);
+            const bgCol = isSeventh ? 'from-black/90 via-black/40' : 'from-black/80 via-black/20';
+            const isPet = c.slug === 'pet-supplies' || c.name.toLowerCase().includes('pet');
+            const imgSrc = isPet ? '/assets/categories/pet-supplies.png' : (c.image || `/assets/categories/${c.slug}.png`);
+
+            return `
+              <a href="category.html?c=${c.slug}" class="group relative ${isSeventh ? 'col-span-1 md:col-span-2 lg:col-span-3 h-[400px]' : 'h-[500px]'} rounded-[3rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 border border-outline-variant/10 block">
+                  <img src="${imgSrc}" alt="${c.name}" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-[1.5s] ${isSeventh ? 'group-hover:scale-105' : 'group-hover:scale-110'}">
+                  <div class="absolute inset-0 bg-gradient-to-${isSeventh ? 'r' : 't'} ${bgCol} to-transparent flex flex-col ${isSeventh ? 'justify-center p-20' : 'justify-end p-12'}">
+                      <h3 class="${isSeventh ? 'text-5xl mb-6' : 'text-4xl mb-4'} text-white font-headline italic">${c.name}</h3>
+                      <p class="${isSeventh ? 'text-white/70 text-xl mb-10 max-w-xl' : 'text-white/70 text-lg mb-8 opacity-0 group-hover:opacity-100 transition-opacity duration-500'}">${c.description || 'Explore our premium selection.'}</p>
+                      ${isSeventh ? `<div><span class="inline-flex items-center bg-primary text-on-primary px-10 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-all">Explore Peak Gear <span class="material-symbols-outlined ml-3">arrow_forward</span></span></div>` : `<span class="inline-flex items-center text-primary-container font-bold uppercase tracking-widest text-xs">Explore Items <span class="material-symbols-outlined ml-2">arrow_forward</span></span>`}
+                  </div>
+              </a>
+            `;
+        }).join('');
+      }
+
+      if (bubbleContainer) {
+        bubbleContainer.innerHTML = categories.map(c => {
           const isPet = c.slug === 'pet-supplies' || c.name.toLowerCase().includes('pet');
           const imgSrc = isPet ? '/assets/categories/pet-supplies.png' : (c.image || `/assets/categories/${c.slug}.png`);
-
+          
           return `
-            <a href="category.html?c=${c.slug}" class="group relative ${isSeventh ? 'col-span-1 md:col-span-2 lg:col-span-3 h-[400px]' : 'h-[500px]'} rounded-[3rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 border border-outline-variant/10 block">
-                <img src="${imgSrc}" alt="${c.name}" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-[1.5s] ${isSeventh ? 'group-hover:scale-105' : 'group-hover:scale-110'}">
-                <div class="absolute inset-0 bg-gradient-to-${isSeventh ? 'r' : 't'} ${bgCol} to-transparent flex flex-col ${isSeventh ? 'justify-center p-20' : 'justify-end p-12'}">
-                    <h3 class="${isSeventh ? 'text-5xl mb-6' : 'text-4xl mb-4'} text-white font-headline italic">${c.name}</h3>
-                    <p class="${isSeventh ? 'text-white/70 text-xl mb-10 max-w-xl' : 'text-white/70 text-lg mb-8 opacity-0 group-hover:opacity-100 transition-opacity duration-500'}">${c.description || 'Explore our premium selection.'}</p>
-                    ${isSeventh ? `<div><span class="inline-flex items-center bg-primary text-on-primary px-10 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-all">Explore Peak Gear <span class="material-symbols-outlined ml-3">arrow_forward</span></span></div>` : `<span class="inline-flex items-center text-primary-container font-bold uppercase tracking-widest text-xs">Explore Items <span class="material-symbols-outlined ml-2">arrow_forward</span></span>`}
-                </div>
+            <a href="category.html?c=${c.slug}" class="flex flex-col items-center gap-3 flex-shrink-0 snap-start group">
+              <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-transparent group-hover:border-primary transition-all duration-300 shadow-sm">
+                <img src="${imgSrc}" alt="${c.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+              </div>
+              <span class="text-[11px] font-bold uppercase tracking-widest text-gray-900 group-hover:text-primary transition-colors text-center max-w-[80px] leading-tight">${c.name}</span>
             </a>
           `;
-      }).join('');
+        }).join('');
+      }
     } catch (err) {
-      console.error("[MRT] Categories Grid Render Error:", err);
+      console.error("[MRT] Categories Render Error:", err);
     }
   }
 
@@ -895,7 +914,7 @@ class MRTApp {
       });
     });
 
-    // --- MOBILE SLIDE-OUT DRAWER LOGIC ---
+    // --- AVORY MOBILE SLIDE-OUT DRAWER ---
     const menuBtn = document.getElementById('mobile-menu-btn');
     const closeBtn = document.getElementById('close-drawer-btn');
     const drawer = document.getElementById('mobile-drawer');
@@ -905,25 +924,17 @@ class MRTApp {
       const openDrawer = () => {
         drawer.classList.remove('-translate-x-full');
         overlay.classList.remove('hidden');
-        // Slight delay to allow display:block to apply before opacity transition
         setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-        document.body.style.overflow = 'hidden'; // Lock background scrolling
+        document.body.style.overflow = 'hidden'; 
       };
-
       const closeDrawer = () => {
         drawer.classList.add('-translate-x-full');
         overlay.classList.add('opacity-0');
-        // Wait for transition to finish before hiding
         setTimeout(() => overlay.classList.add('hidden'), 300);
-        document.body.style.overflow = ''; // Unlock scrolling
+        document.body.style.overflow = ''; 
       };
-
-      menuBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        openDrawer();
-      });
-      
-      closeBtn?.addEventListener('click', closeDrawer);
+      menuBtn.addEventListener('click', (e) => { e.preventDefault(); openDrawer(); });
+      closeBtn?.addEventListener('click', (e) => { e.preventDefault(); closeDrawer(); });
       overlay?.addEventListener('click', closeDrawer);
       
       // Close on link click
