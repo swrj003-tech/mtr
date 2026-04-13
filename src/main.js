@@ -119,36 +119,7 @@ class MRTApp {
         });
       }
 
-      // Mobile Menu - Enhanced
-      const mobileBtn = document.getElementById('mobile-menu-btn');
-      const mobileNav = document.getElementById('mobile-menu');
-      if (mobileBtn && mobileNav) {
-        mobileBtn.addEventListener('click', () => {
-          mobileNav.classList.toggle('active');
-          const icon = mobileBtn.querySelector('.material-symbols-outlined');
-          if (icon) {
-            icon.textContent = mobileNav.classList.contains('active') ? 'close' : 'menu';
-          }
-        });
-
-        // Close menu when clicking on a link
-        mobileNav.querySelectorAll('a').forEach(link => {
-          link.addEventListener('click', () => {
-            mobileNav.classList.remove('active');
-            const icon = mobileBtn.querySelector('.material-symbols-outlined');
-            if (icon) icon.textContent = 'menu';
-          });
-        });
-
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-          if (!mobileNav.contains(e.target) && !mobileBtn.contains(e.target)) {
-            mobileNav.classList.remove('active');
-            const icon = mobileBtn.querySelector('.material-symbols-outlined');
-            if (icon) icon.textContent = 'menu';
-          }
-        });
-      }
+      // Drawer initialization handled in bindEvents() now
 
       if (this.isBoutique) {
         await this.initBoutique();
@@ -923,6 +894,43 @@ class MRTApp {
         this.scrollToTarget(target);
       });
     });
+
+    // --- MOBILE SLIDE-OUT DRAWER LOGIC ---
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const closeBtn = document.getElementById('close-drawer-btn');
+    const drawer = document.getElementById('mobile-drawer');
+    const overlay = document.getElementById('mobile-drawer-overlay');
+
+    if (menuBtn && drawer && overlay) {
+      const openDrawer = () => {
+        drawer.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+        // Slight delay to allow display:block to apply before opacity transition
+        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        document.body.style.overflow = 'hidden'; // Lock background scrolling
+      };
+
+      const closeDrawer = () => {
+        drawer.classList.add('-translate-x-full');
+        overlay.classList.add('opacity-0');
+        // Wait for transition to finish before hiding
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+        document.body.style.overflow = ''; // Unlock scrolling
+      };
+
+      menuBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openDrawer();
+      });
+      
+      closeBtn?.addEventListener('click', closeDrawer);
+      overlay?.addEventListener('click', closeDrawer);
+      
+      // Close on link click
+      drawer.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', closeDrawer);
+      });
+    }
 
     // Expose globally for any legacy callers
     window.closeQuickView = () => this.closeQuickView();
