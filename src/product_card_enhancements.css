@@ -99,6 +99,12 @@ body {
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+@media (max-width: 768px) {
+  .product-card__image-wrap img {
+    padding: 0.75rem;
+  }
+}
+
 .product-card:hover .product-card__image-wrap img {
   transform: scale(1.08);
 }
@@ -178,6 +184,13 @@ body {
   overflow: hidden;
   margin: 0;
   min-height: 2.7em; /* Force 2-line consistency */
+}
+
+@media (max-width: 768px) {
+  .product-card__name {
+    font-size: 0.85rem;
+    min-height: 2.5em; /* Slightly tighter for mobile 2-col */
+  }
 }
 
 .product-card__benefit {
@@ -292,6 +305,17 @@ body {
   padding: 0.75rem 1rem 1rem;
   border-top: 1px solid rgba(0,0,0,0.05);
   margin-top: auto;
+}
+
+@media (max-width: 480px) {
+  .product-card__actions {
+    grid-template-columns: 1fr;
+    padding: 0.6rem 0.75rem 0.75rem;
+  }
+  .product-card__btn-amazon, .product-card__btn-quickview {
+    min-height: 38px;
+    font-size: 0.65rem;
+  }
 }
 
 .product-card__btn-amazon {

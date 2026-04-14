@@ -401,20 +401,25 @@ class MRTApp {
       container.innerHTML = `
         ${heroHtml}
         <div class="mb-12">
-          <div class="flex flex-wrap items-center gap-3 mb-10 overflow-x-auto pb-4 no-scrollbar">
-            <button class="category-filter-pill active px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] border border-gray-100 shadow-sm transition-all duration-300 bg-gray-900 text-white" data-filter="all">
+          <!-- Filter Navigation: Sticky on Mobile to avoid overlaps -->
+          <div class="sticky top-14 z-[80] bg-surface/95 backdrop-blur-md py-4 mb-8 -mx-4 px-4 border-b border-gray-50 flex flex-nowrap items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth">
+            <button class="category-filter-pill active whitespace-nowrap px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] border border-gray-100 shadow-sm transition-all duration-300 bg-gray-900 text-white" data-filter="all">
               Curated All <span class="ml-2 opacity-50 font-medium">${list.length}</span>
             </button>
             ${badges.map(b => {
               const count = list.filter(p => p.badge === b).length;
-              return `<button class="category-filter-pill px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] border border-gray-100 shadow-sm transition-all duration-300 bg-white text-gray-400 hover:text-gray-900 hover:border-gray-200" data-filter="${b}">
+              return `<button class="category-filter-pill whitespace-nowrap px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] border border-gray-100 shadow-sm transition-all duration-300 bg-white text-gray-400 hover:text-gray-900 hover:border-gray-200" data-filter="${b}">
                 ${b} <span class="ml-2 opacity-30 font-medium">${count}</span>
               </button>`;
             }).join('')}
           </div>
           
-          <div id="category-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            ${list.map((p, i) => `<div class="category-card-wrapper" data-badge="${p.badge || ''}" style="animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${i * 0.05}s both;">${this.createProductCard(p)}</div>`).join('')}
+          <div id="category-grid" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-2 md:px-0">
+            ${list.map((p, i) => `
+              <div class="category-card-wrapper h-full" data-badge="${p.badge || ''}" style="animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${i * 0.05}s both;">
+                ${this.createProductCard(p)}
+              </div>
+            `).join('')}
           </div>
         </div>
       `;

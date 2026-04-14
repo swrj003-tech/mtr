@@ -346,20 +346,20 @@
 @media (max-width: 767px) {
   /* Push body content down exactly the height of the header so there is no white space or overlap */
   body {
-    padding-top: 56px !important; 
+    /* Relying on pt-14 on main instead of body padding to prevent double-offset gaps */
   }
   /* Remove any top margin from the first section that might cause white space */
   main > section:first-child,
   #categories {
     margin-top: 0 !important;
-    padding-top: 16px !important;
+    padding-top: 0 !important;
   }
 }
 
 @media (max-width: 767px) {
-  body { padding-bottom: 80px !important; padding-top: 56px !important; }
+  body { padding-bottom: 80px !important; }
   #mobile-menu-btn { display: flex !important; }
-  main > section:first-child, #categories { margin-top: 0 !important; padding-top: 16px !important; }
+  main > section:first-child, #categories { margin-top: 0 !important; padding-top: 0 !important; }
   .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 }
 
