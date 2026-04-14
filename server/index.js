@@ -78,6 +78,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.resolve(process.cwd(), 'public'))); // ABSOLUTE ASSET SERVING
+app.use(express.static(path.join(__dirname, '../dist'))); // SERVE BUILT FRONTEND
 
 // ENHANCED: Prevent API Caching ONLY for specific data routes to save server load
 app.use('/api', (req, res, next) => {
@@ -172,6 +173,14 @@ app.get('/api/legacy/themes', async (req, res) => {
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'MRT International Server is healthy' });
+});
+app.get('/api/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: 'OK', database: 'connected', uptime: process.uptime() });
+  } catch (err) {
+    res.status(500).json({ status: 'ERROR', database: 'disconnected', error: err.message });
+  }
 });
 
 // EXPLICIT ADMIN ROUTING FIX

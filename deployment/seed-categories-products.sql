@@ -11,7 +11,7 @@ INSERT INTO `Category` (`name`, `slug`, `image`, `sortOrder`) VALUES
 ('Home & Kitchen', 'home-kitchen', '/assets/categories/home-kitchen.jpg', 1),
 ('Beauty & Personal Care', 'beauty-personal-care', '/assets/categories/beauty.jpg', 2),
 ('Health & Wellness', 'health-wellness', '/assets/categories/health.jpg', 3),
-('Pet Supplies', 'pet-supplies', '/assets/categories/pets.jpg', 4),
+('Pet Supplies', 'pet-supplies', '/assets/categories/pet-supplies.png', 4),
 ('Baby & Kids Essentials', 'baby-kids', '/assets/categories/baby.jpg', 5),
 ('Electronics & Accessories', 'electronics', '/assets/categories/electronics.jpg', 6),
 ('Sports & Fitness', 'sports-fitness', '/assets/categories/sports.jpg', 7);
