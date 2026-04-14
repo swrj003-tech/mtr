@@ -126,6 +126,17 @@ model NewsletterSub {
   createdAt DateTime @default(now())
 }
 
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+}
+
 model MediaFile {
   id           String   @id @default(cuid())
   filename     String
@@ -137,4 +148,3 @@ model MediaFile {
   uploadedBy   String?
   createdAt    DateTime @default(now())
 }
-

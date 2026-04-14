@@ -8,7 +8,7 @@ async function api(path, opts = {}) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   let finalPath = path;
-  const needsCacheBust = path.includes('/products') || path.includes('/categories') || path.includes('/stats') || path.includes('/reviews');
+  const needsCacheBust = path.includes('/products') || path.includes('/categories') || path.includes('/stats') || path.includes('/reviews') || path.includes('/messages');
 
   if ((!opts.method || opts.method === 'GET') && needsCacheBust) {
     finalPath += (path.includes('?') ? '&' : '?') + `_t=${Date.now()}`;
@@ -197,6 +197,9 @@ function updateSidebar() {
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-title">Marketing</div>
+      <a class="nav-item ${currentView === 'messages' ? 'active' : ''}" data-view="messages">
+        <span class="material-symbols-outlined">forum</span> Messages
+      </a>
       <a class="nav-item ${currentView === 'newsletter' ? 'active' : ''}" data-view="newsletter">
         <span class="material-symbols-outlined">mail</span> Newsletter
       </a>
@@ -246,6 +249,7 @@ async function renderView() {
     case 'testimonials': await renderTestimonials(viewContainer); break;
     case 'analytics': await renderAnalytics(viewContainer); break;
     case 'reviews': await renderReviews(viewContainer); break;
+    case 'messages': await renderMessages(viewContainer); break;
     case 'newsletter': await renderNewsletter(viewContainer); break;
     default: await renderDashboard(viewContainer);
   }
@@ -280,6 +284,11 @@ async function renderDashboard(main) {
         <div class="stat-icon"><span class="material-symbols-outlined">mail</span></div>
         <div class="stat-label">Subscribers</div>
         <div class="stat-value">${stats.subscriberCount || 0}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><span class="material-symbols-outlined">forum</span></div>
+        <div class="stat-label">Messages</div>
+        <div class="stat-value">${stats.messageCount || 0}</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon"><span class="material-symbols-outlined">reviews</span></div>
@@ -874,6 +883,41 @@ async function renderNewsletter(main) {
     if (res?.error) { toast('Remove failed', 'error'); return; }
     toast('Subscriber removed'); renderView();
   }));
+}
+
+async function loadMessages() {
+  const messages = await api('/admin/messages');
+  return Array.isArray(messages) ? messages : [];
+}
+
+async function renderMessages(main) {
+  const messages = await loadMessages();
+
+  main.innerHTML = `
+    <div class="page-header">
+      <div><h2>Messages</h2><div class="subtitle">${messages.length} contact submissions</div></div>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead><tr><th>Name</th><th class="hide-xs">Contact</th><th class="hide-sm">Subject</th><th>Status</th><th>Date</th><th class="hide-sm">Message</th></tr></thead>
+        <tbody id="messages-table-body">
+          ${messages.map(msg => `
+            <tr>
+              <td>
+                <strong>${msg.name}</strong>
+                <br><span class="text-muted text-sm">${msg.email}</span>
+              </td>
+              <td class="hide-xs">${msg.phone || '-'}</td>
+              <td class="hide-sm">${msg.subject || '-'}</td>
+              <td><span class="badge badge-info">${msg.status || 'new'}</span></td>
+              <td class="text-muted text-sm">${new Date(msg.createdAt).toLocaleString()}</td>
+              <td class="hide-sm" style="max-width:320px;white-space:normal;line-height:1.5">${msg.message}</td>
+            </tr>
+          `).join('') || '<tr><td colspan="6" class="text-center text-muted" style="padding:2rem">No messages yet</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 // === Analytics ===

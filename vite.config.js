@@ -15,6 +15,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,          // Listen on all local IPs
     port: 5174,          // Always use this port
     strictPort: true,    // FAIL instead of jumping to 5174, 5175 etc.
     allowedHosts: true,  // Allow tunnel hosts

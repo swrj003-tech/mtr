@@ -7,13 +7,14 @@ const router = express.Router();
 // GET /api/admin/stats - Consolidated dashboard metrics
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
-    const [productCount, categoryCount, clickCount, subscriberCount, testimonialCount, reviewCount] = await Promise.all([
+    const [productCount, categoryCount, clickCount, subscriberCount, testimonialCount, reviewCount, messageCount] = await Promise.all([
       prisma.product.count(),
       prisma.category.count(),
       prisma.affiliateClick.count(),
       prisma.newsletterSub.count(),
       prisma.testimonial.count(),
       prisma.review.count(),
+      prisma.contactMessage.count(),
     ]);
 
     const recentClicks = await prisma.affiliateClick.findMany({
@@ -29,6 +30,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
       subscriberCount,
       testimonialCount,
       reviewCount,
+      messageCount,
       recentClicks,
     });
   } catch (err) {
@@ -68,6 +70,18 @@ router.get('/reviews', authMiddleware, adminOnly, async (req, res) => {
     res.json(reviews);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch all reviews' });
+  }
+});
+
+router.get('/messages', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const messages = await prisma.contactMessage.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(messages);
+  } catch (error) {
+    console.error('Admin Messages Error:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
   }
 });
 

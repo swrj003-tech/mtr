@@ -57,6 +57,7 @@ class MRTApp {
     this.lenisTicker = null;
     this.quickViewCleanupPending = false;
     this.previousBodyOverflow = '';
+    this.globalEventsBound = false;
 
     // 2. Library Guards - RESTRICT SMOOTH SCROLL TO DESKTOP FOR NATIVE MOBILE FEEL
     if (typeof Lenis !== 'undefined' && window.innerWidth > 768) {
@@ -873,6 +874,8 @@ class MRTApp {
 
   bindEvents() {
     document.querySelectorAll('.nav-prev, .nav-next').forEach(btn => {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const el = document.getElementById(btn.dataset.target);
@@ -880,31 +883,37 @@ class MRTApp {
       });
     });
 
-    document.addEventListener('click', (e) => {
-      const qvBtn = e.target.closest('[data-qv-btn]');
-      if (qvBtn) {
-        e.stopPropagation();
-        this.openQuickView(qvBtn.dataset.id);
-        return;
-      }
+    if (!this.globalEventsBound) {
+      document.addEventListener('click', (e) => {
+        const qvBtn = e.target.closest('[data-qv-btn]');
+        if (qvBtn) {
+          e.stopPropagation();
+          this.openQuickView(qvBtn.dataset.id);
+          return;
+        }
 
-      const reviewBtn = e.target.closest('[data-review-btn]');
-      if (reviewBtn) {
-        this.openReviewModal(reviewBtn.dataset.productId, reviewBtn.dataset.productName);
-        return;
-      }
+        const reviewBtn = e.target.closest('[data-review-btn]');
+        if (reviewBtn) {
+          this.openReviewModal(reviewBtn.dataset.productId, reviewBtn.dataset.productName);
+          return;
+        }
 
-      if (e.target.closest('a, button, input, textarea, select, label')) return;
+        if (e.target.closest('a, button, input, textarea, select, label')) return;
 
-      // Clicking anywhere on the card body (not a button/link) opens Quick View
-      const card = e.target.closest('[data-enhanced-card]');
-      if (card) {
-        this.openQuickView(card.dataset.id);
-      }
-    });
+        // Clicking anywhere on the card body (not a button/link) opens Quick View
+        const card = e.target.closest('[data-enhanced-card]');
+        if (card) {
+          this.openQuickView(card.dataset.id);
+        }
+      });
+
+      this.globalEventsBound = true;
+    }
 
     // Smooth anchor scroll
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      if (anchor.dataset.bound === 'true') return;
+      anchor.dataset.bound = 'true';
       anchor.addEventListener('click', (e) => {
         const href = anchor.getAttribute('href');
         if (!href || href === '#') return;
@@ -933,13 +942,63 @@ class MRTApp {
         setTimeout(() => overlay.classList.add('hidden'), 300);
         document.body.style.overflow = ''; 
       };
-      menuBtn.addEventListener('click', (e) => { e.preventDefault(); openDrawer(); });
-      closeBtn?.addEventListener('click', (e) => { e.preventDefault(); closeDrawer(); });
-      overlay?.addEventListener('click', closeDrawer);
+      if (menuBtn.dataset.bound !== 'true') {
+        menuBtn.dataset.bound = 'true';
+        menuBtn.addEventListener('click', (e) => { e.preventDefault(); openDrawer(); });
+      }
+      if (closeBtn && closeBtn.dataset.bound !== 'true') {
+        closeBtn.dataset.bound = 'true';
+        closeBtn.addEventListener('click', (e) => { e.preventDefault(); closeDrawer(); });
+      }
+      if (overlay.dataset.bound !== 'true') {
+        overlay.dataset.bound = 'true';
+        overlay.addEventListener('click', closeDrawer);
+      }
       
       // Close on link click
       drawer.querySelectorAll('a').forEach(link => {
+        if (link.dataset.drawerBound === 'true') return;
+        link.dataset.drawerBound = 'true';
         link.addEventListener('click', closeDrawer);
+      });
+    }
+
+    const contactForm = document.getElementById('contact-form');
+    if (contactForm && contactForm.dataset.bound !== 'true') {
+      contactForm.dataset.bound = 'true';
+      contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = contactForm.querySelector('button[type="submit"]');
+        const originalText = btn?.innerText || 'Send Message';
+        if (btn) {
+          btn.innerText = 'Sending...';
+          btn.disabled = true;
+        }
+
+        const data = Object.fromEntries(new FormData(contactForm).entries());
+
+        try {
+          const res = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+          const result = await res.json();
+
+          if (result.success) {
+            alert('Message sent successfully!');
+            contactForm.reset();
+          } else {
+            alert(result.error || 'Something went wrong.');
+          }
+        } catch (err) {
+          alert('Error connecting to server.');
+        } finally {
+          if (btn) {
+            btn.innerText = originalText;
+            btn.disabled = false;
+          }
+        }
       });
     }
 
