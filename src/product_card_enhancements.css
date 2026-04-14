@@ -118,20 +118,23 @@ body {
 /* ─── BADGE ─── */
 .product-card__badge {
   position: absolute;
-  top: 0.875rem;
-  left: 0.875rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 6px;
-  font-size: 0.58rem;
-  font-weight: 800;
+  top: 1rem;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 99px; /* Pill shape for premium feel */
+  font-size: 0.65rem;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  background: #111;
-  color: #c5a059;
-  border: 1px solid rgba(197, 160, 89, 0.3);
-  z-index: 2;
+  letter-spacing: 0.18em;
+  background: #c5a059; /* Solid gold background for visibility */
+  color: #000; /* Black text for high contrast */
+  border: none;
+  z-index: 50;
   line-height: 1;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 16px rgba(197, 160, 89, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Discount badge on top-right */

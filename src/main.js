@@ -407,7 +407,7 @@ class MRTApp {
               Curated All <span class="ml-2 opacity-50 font-medium">${list.length}</span>
             </button>
             ${badges.map(b => {
-              const count = list.filter(p => p.badge === b).length;
+              const count = list.filter(p => (p.badge || 'Top Pick') === b).length;
               return `<button class="category-filter-pill whitespace-nowrap px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] border border-gray-100 shadow-sm transition-all duration-300 bg-white text-gray-400 hover:text-gray-900 hover:border-gray-200" data-filter="${b}">
                 ${b} <span class="ml-2 opacity-30 font-medium">${count}</span>
               </button>`;
