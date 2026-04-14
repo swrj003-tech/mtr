@@ -968,19 +968,26 @@ class MRTApp {
       });
     }
 
+    // --- CONTACT FORM HANDLER (Robust Binding) ---
     const contactForm = document.getElementById('contact-form');
     if (contactForm && contactForm.dataset.bound !== 'true') {
       contactForm.dataset.bound = 'true';
-      contactForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btn = contactForm.querySelector('button[type="submit"]');
+      
+      const handleSubmit = async (e) => {
+        if (e) e.preventDefault();
+        
+        const btn = document.getElementById('contact-submit-btn') || contactForm.querySelector('button[type="submit"]');
+        if (btn?.disabled) return; // Prevent double submit
+
         const originalText = btn?.innerText || 'Send Message';
         if (btn) {
-          btn.innerText = 'Sending...';
+          btn.innerText = 'SENDING...';
           btn.disabled = true;
+          btn.style.opacity = '0.7';
         }
 
-        const data = Object.fromEntries(new FormData(contactForm).entries());
+        const formData = new FormData(contactForm);
+        const data = Object.fromEntries(formData.entries());
 
         try {
           const res = await fetch('/api/contact', {
@@ -991,20 +998,36 @@ class MRTApp {
           const result = await res.json();
 
           if (result.success) {
-            alert('Message sent successfully!');
+            toast('Message received! We will contact you soon.', 'success');
             contactForm.reset();
           } else {
-            alert(result.error || 'Something went wrong.');
+            toast(result.error || 'Submission failed.', 'error');
           }
         } catch (err) {
-          alert('Error connecting to server.');
+          console.error('Submission Error:', err);
+          toast('Network error. Check your connection.', 'error');
         } finally {
           if (btn) {
             btn.innerText = originalText;
             btn.disabled = false;
+            btn.style.opacity = '1';
           }
         }
-      });
+      };
+
+      contactForm.addEventListener('submit', handleSubmit);
+      
+      // Fallback: Click listener on button to ensure submission in all contexts
+      const submitBtn = document.getElementById('contact-submit-btn');
+      if (submitBtn) {
+        submitBtn.addEventListener('click', (e) => {
+          if (contactForm.checkValidity()) {
+            handleSubmit(e);
+          } else {
+            contactForm.reportValidity();
+          }
+        });
+      }
     }
 
     // --- REVIEWS ROUTING FIX ---
