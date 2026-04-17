@@ -13,7 +13,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "NODE_ENV=production node server/index.js",
-    "deploy": "git pull origin main && npm install && npm run build",
+    "deploy": "git pull origin main && npm install && npm run build && pm2 restart ecosystem.config.js",
     "prisma:seed": "node server/seed.js"
   },
   "prisma": {

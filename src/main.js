@@ -696,25 +696,36 @@ class MRTApp {
 
   renderCategoriesGrid(categories) {
     try {
-      // 1. Check for legacy grid first (Desktop)
-      const grid = document.getElementById('categories-grid');
-      // 2. Check for new Avory bubbles (Mobile)
+      // Use the newly defined grid container from index.html
+      const grid = document.getElementById('avory-categories-grid');
+      // Legacy mobile bubbles if needed
       const bubbleContainer = document.getElementById('avory-categories');
 
       if (grid) {
         grid.innerHTML = categories.map((c, index) => {
-            const isSeventh = index === 6 || (index > 0 && index === categories.length - 1 && categories.length > 5);
-            const bgCol = isSeventh ? 'from-black/90 via-black/40' : 'from-black/80 via-black/20';
             const isPet = c.slug === 'pet-supplies' || c.name.toLowerCase().includes('pet');
             const imgSrc = isPet ? '/assets/categories/pet-supplies.png' : (c.image || `/assets/categories/${c.slug}.png`);
 
             return `
-              <a href="category.html?c=${c.slug}" class="group relative ${isSeventh ? 'col-span-1 md:col-span-2 lg:col-span-3 h-[400px]' : 'h-[500px]'} rounded-[3rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 border border-outline-variant/10 block">
-                  <img src="${imgSrc}" alt="${c.name}" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-[1.5s] ${isSeventh ? 'group-hover:scale-105' : 'group-hover:scale-110'}">
-                  <div class="absolute inset-0 bg-gradient-to-${isSeventh ? 'r' : 't'} ${bgCol} to-transparent flex flex-col ${isSeventh ? 'justify-center p-20' : 'justify-end p-12'}">
-                      <h3 class="${isSeventh ? 'text-5xl mb-6' : 'text-4xl mb-4'} text-white font-headline italic">${c.name}</h3>
-                      <p class="${isSeventh ? 'text-white/70 text-xl mb-10 max-w-xl' : 'text-white/70 text-lg mb-8 opacity-0 group-hover:opacity-100 transition-opacity duration-500'}">${c.description || 'Explore our premium selection.'}</p>
-                      ${isSeventh ? `<div><span class="inline-flex items-center bg-primary text-on-primary px-10 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-all">Explore Peak Gear <span class="material-symbols-outlined ml-3">arrow_forward</span></span></div>` : `<span class="inline-flex items-center text-primary-container font-bold uppercase tracking-widest text-xs">Explore Items <span class="material-symbols-outlined ml-2">arrow_forward</span></span>`}
+              <a href="category.html?c=${c.slug}" class="group relative block h-[450px] md:h-[550px] rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 bg-gray-100 border border-outline-variant/5">
+                  <!-- Background Image with Zoom Effect -->
+                  <img src="${imgSrc}" alt="${c.name}" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110">
+                  
+                  <!-- Dark Overlay for Readability -->
+                  <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors duration-500"></div>
+                  
+                  <!-- Centered Content Wrapper -->
+                  <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 md:p-12 z-10">
+                      <div class="flex flex-col items-center transform group-hover:-translate-y-2 transition-transform duration-700">
+                        <span class="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-4 opacity-70">Explore Collection</span>
+                        <h3 class="text-4xl md:text-5xl text-white font-headline italic leading-[1.1] mb-6">${c.name}</h3>
+                        <p class="text-white/80 text-sm mb-10 max-w-[240px] leading-relaxed line-clamp-2">${c.description || 'Curated premium selection for sophisticated lifestyles.'}</p>
+                        
+                        <!-- Read More Button (Avory Style) -->
+                        <div class="inline-flex items-center px-8 py-3 rounded-full border border-white/40 text-white text-[10px] font-bold uppercase tracking-[0.2em] group-hover:bg-white group-hover:text-black transition-all duration-300">
+                          Read More
+                        </div>
+                      </div>
                   </div>
               </a>
             `;
