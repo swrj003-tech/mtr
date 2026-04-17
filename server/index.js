@@ -78,6 +78,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.resolve(process.cwd(), 'public'))); // ABSOLUTE ASSET SERVING
+app.use(express.static(path.join(__dirname, '../dist'))); // SERVE DIST
 
 // ENHANCED: Prevent API Caching ONLY for specific data routes to save server load
 app.use('/api', (req, res, next) => {

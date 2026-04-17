@@ -762,7 +762,7 @@ class MRTApp {
           const itemsHtml = list.map(p => this.createProductCard(p, { isCarousel: true })).join('');
           
           return `
-            <section class="py-12 md:py-16 ${bgClass} overflow-hidden carousel-section border-b border-outline-variant/10" style="--category-primary:${primary};--category-secondary:${secondary};--category-primary-glow:rgba(${r},${g},${b},0.15)">
+            <section class="py-10 md:py-12 ${bgClass} overflow-hidden carousel-section border-b border-outline-variant/10" style="--category-primary:${primary};--category-secondary:${secondary};--category-primary-glow:rgba(${r},${g},${b},0.15)">
                 <div class="px-4 md:px-8 max-w-screen-2xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 md:mb-16 reveal-up">
                     <div class="flex flex-col">
                         <span class="text-[10px] font-black text-primary uppercase tracking-[0.5em] mb-4 opacity-60">Boutique Department</span>

@@ -104,7 +104,6 @@ body {
     padding: 0.75rem;
   }
 }
-
 .product-card:hover .product-card__image-wrap img {
   transform: scale(1.08);
 }
@@ -195,7 +194,6 @@ body {
     min-height: 2.5em; /* Slightly tighter for mobile 2-col */
   }
 }
-
 .product-card__benefit {
   font-size: 0.76rem;
   color: #74706a;
@@ -320,7 +318,6 @@ body {
     font-size: 0.65rem;
   }
 }
-
 .product-card__btn-amazon {
   display: flex;
   align-items: center;
