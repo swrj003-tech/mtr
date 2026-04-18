@@ -21,7 +21,7 @@ Since your Hostinger Business plan supports **Managed Node.js**, we can run your
    - **Node.js Version**: Select the latest (e.g., 20.x or 22.x).
    - **Application Mode**: `Production`.
    - **Application Root**: `public_html/` (This is where your files are).
-   - **Application Startup File**: `server/index.js` (CRITICAL: Do not just put `index.js`).
+   - **Application Startup File**: `server.js` (CRITICAL: Previously it was server/index.js).
    - **Application URL**: Your domain (e.g., `https://yourdomain.com`).
 4. Click **Next** or **Save**.
 
@@ -48,6 +48,9 @@ ADMIN_PASSWORD="set_your_admin_password"
 ---
 
 ## 4️⃣ Install Dependencies & Migrate
+
+> [!WARNING]
+> **DO NOT** use the "Build" button in Hostinger. Our build is custom and must be done locally (Step 5). The "Build" button in hPanel will often fail and reset your settings.
 
 1. Go back to **Advanced** -> **Node.js**.
 2. Click on your application.
